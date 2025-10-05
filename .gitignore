@@ -1,0 +1,33 @@
+# Docker runtime directories - these are mounted as volumes
+# and contain runtime data that shouldn't be in version control
+
+# Container config directories (mounted volumes)
+*/config/
+*/data/
+
+# Docker Compose override files
+docker-compose.override.yml
+.env
+
+# Container logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
