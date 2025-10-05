@@ -1,0 +1,27 @@
+# Configuration rendered from env vars
+log_timestamp false
+pid_file /run/mosquitto/mosquitto.pid
+user ${MOSQUITTO_USER:-abc}
+
+log_dest ${MQTT_LOG_DST:-stdout}
+$(for t in "${MQTT_LOG_LEVEL[@]}"; do echo "log_type ${t}"; done)
+connection_messages ${MQTT_LOG_CONNECTIONS:-true}
+per_listener_settings true
+
+max_queued_messages ${MQTT_MAX_QUEUED_MESSAGES:-100}
+use_username_as_clientid ${MQTT_USE_USERNAME_AS_CLIENTID:-false}
+
+autosave_interval ${MQTT_AUTOSAVE:-300}
+autosave_on_changes ${MQTT_AUTOSAVE_ON_CHANGES:-false}
+check_retain_source true
+persistence ${MQTT_PERSISTENCE:-true}
+persistence_location ${DATADIR}
+
+# healthcheck
+listener 0 /run/mosquitto/mosquitto.sock
+allow_anonymous true
+allow_zero_length_clientid true
+auto_id_prefix local-
+
+include_dir ${CONFIGDIR}/conf.d
+

@@ -1,0 +1,15 @@
+version: "3.9"
+services:
+  mosquitto:
+    build:
+      context: .
+    image: mosquitto:latest
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+    - ./data:/mqtt
+    - ./config:/config
+    ports:
+    - 1883:1883
+    environment:
+      MQTT_USERS: "jose:hola pepe:adios"

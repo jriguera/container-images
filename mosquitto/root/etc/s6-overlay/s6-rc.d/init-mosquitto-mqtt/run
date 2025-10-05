@@ -1,0 +1,32 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+# Define a list of user:password list separated by spaces
+MQTT_USERS_LIST=(${MQTT_USERS:-})
+MQTT_ALLOW_ANONYMOUS="${MQTT_ALLOW_ANONYMOUS:-false}"
+
+MOSQUITTO_USERS_FILE="${MOSQUITTO_USERS_FILE:-${CONFIGDIR}/users}"
+if [[ ! -r "${MQTT_USERS_FILE}" ]]
+then
+    if [[ "${#MQTT_USERS_LIST[@]}" -eq 0 ]] && ! [[ "${MQTT_ALLOW_ANONYMOUS}" =~ (true|TRUE|True) ]]
+    then
+        echo "* Warning: No MQTT_USERS variable with users and password defined, and MQTT_ALLOW_ANONYMOUS is not true"
+        userpass="default:$(pwgen -s -1 10)"
+        echo "* Generated a default user and password for the clients to connect: <${userpass}>"
+        MQTT_USERS_LIST+=("${userpass}")
+    fi
+    touch "${MOSQUITTO_USERS_FILE}"
+    chmod 0700 "${MOSQUITTO_USERS_FILE}"
+    for item in ${MQTT_USERS_LIST[@]}
+    do
+        userpass=(${item//:/ })
+        echo "* Allowing user "${userpass[0]}" and its password ..."
+        mosquitto_passwd -b "${MOSQUITTO_USERS_FILE}" "${userpass[0]}" "${userpass[1]}"
+    done
+    echo "* Generated users file in ${MOSQUITTO_USERS_FILE}"
+fi
+
+if [[ -z ${LSIO_NON_ROOT_USER} ]]
+then
+    lsiown -R abc:abc "${MOSQUITTO_USERS_FILE}"
+fi

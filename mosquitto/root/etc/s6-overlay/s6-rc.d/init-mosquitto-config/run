@@ -1,0 +1,69 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+# Mosquitto configuration parameters and defaults
+export MQTT_PORT=${MQTT_PORT:-${PORT}}
+export MQTT_LOG_DST="${MQTT_LOG_DST:-stdout}"
+export MQTT_LOG_LEVEL=(${MQTT_LOG_LEVEL:-error warning notice information})
+export MQTT_LOG_CONNECTIONS="${MQTT_LOG_CONNECTIONS:-true}"
+export MQTT_ALLOW_ANONYMOUS="${MQTT_ALLOW_ANONYMOUS:-false}"
+export MQTT_PERSISTENCE="${MQTT_PERSISTENCE:-true}"
+export MQTT_AUTOSAVE="${MQTT_AUTOSAVE:-300}"
+export MQTT_AUTOSAVE_ON_CHANGES="${MQTT_AUTOSAVE_ON_CHANGES:-false}"
+export MQTT_MAX_CONNECTIONS="${MQTT_MAX_CONNECTIONS:-500}"
+export MQTT_MAX_QUEUED_MESSAGES="${MQTT_MAX_QUEUED_MESSAGES:-100}"
+export MQTT_SET_TCP_NODELAY="${MQTT_SET_TCP_NODELAY:-true}"
+export MQTT_MAX_KEEPALIVE="${MQTT_MAX_KEEPALIVE:-65535}"
+export MQTT_USE_USERNAME_AS_CLIENTID="${MQTT_USE_USERNAME_AS_CLIENTID:-false}"
+export MQTT_ALLOW_NO_CLIENTID="${MQTT_ALLOW_NO_CLIENTID:-true}"
+
+export MOSQUITTO_USERS_FILE="${MOSQUITTO_USERS_FILE:-${CONFIGDIR}/users}"
+
+# make folders if required
+mkdir -p "${DATADIR}" "${CONFIGDIR}" /run/mosquitto
+
+# load env file if it exists
+if [[ -f "${CONFIGDIR}/env" ]]
+then
+    # shellcheck source=/dev/null
+    source "${CONFIGDIR}/env"
+fi
+
+# Generate configuration file if GENERATE_CONFIG is true, 1, True, TRUE or not defined
+if [[ -z "${GENERATE_CONFIG}" ]] || [[ "${GENERATE_CONFIG,,}" == "true" ]] || [[ "${GENERATE_CONFIG}" == "1" ]]
+then
+    echo "* Generating default configuration from environment variables ..."    
+    # Render a template configuration file
+    # expand variables + preserve formatting
+    eval "echo \"$(cat /defaults/mosquitto.conf.template)\"" > "${CONFIGDIR}/mosquitto.conf"
+
+    includes="${CONFIGDIR}/conf.d"
+    mkdir -p "${includes}"
+    if [[ ! -r "${includes}/default.conf" ]]
+    then
+        echo "* Generating default listener from environment variables ..."
+        cat <<-EOF > "${includes}/default.conf"
+		listener ${MQTT_PORT:-1883} 0.0.0.0
+		allow_anonymous ${MQTT_ALLOW_ANONYMOUS:-false}
+		password_file ${MOSQUITTO_USERS_FILE}
+		allow_zero_length_clientid ${MQTT_ALLOW_NO_CLIENTID:-true}
+		auto_id_prefix generated-
+		max_connections ${MQTT_MAX_CONNECTIONS:-500}
+		max_keepalive ${MQTT_MAX_KEEPALIVE:-65535}
+		set_tcp_nodelay ${MQTT_SET_TCP_NODELAY:-true}
+		EOF
+    else
+        echo "* Default listener already defined in "${includes}/default.conf", skipping..."
+    fi
+fi
+
+if [[ -z ${LSIO_NON_ROOT_USER} ]]
+then
+    lsiown -R abc:abc /run/mosquitto  "${DATADIR}" "${CONFIGDIR}"
+fi
+
+# remove orphan pid file
+if [[ -f /run/mosquitto/mosquitto.pid ]]
+then
+    rm -f /run/mosquitto/mosquitto.pid
+fi
