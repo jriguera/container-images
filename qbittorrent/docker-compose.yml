@@ -1,0 +1,61 @@
+version: "3.9"
+
+services:
+  qbittorrent:
+    build:
+      context: .
+    image: qbittorrent:latest
+    container_name: qbittorrent
+    restart: unless-stopped
+    networks:
+      - torrent
+    ports:
+      - "6881:6881"      # BitTorrent TCP
+      - "6881:6881/udp"  # BitTorrent UDP  
+      - "8080:8080"      # Web interface
+    volumes:
+      - data:/data
+      - ./config:/config
+    environment:
+      # Network Configuration
+      - QBT_TORRENT_PORT=6881
+      # Web UI Configuration
+      - QBT_WEBUI_PORT=8080
+      - QBT_WEBUI_PASSWORD=mysecretpassword
+      # Performance & Limits
+      - QBT_MEMORY_WORKING_SET_LIMIT=1024
+      - QBT_GLOBAL_MAX_CONNECTIONS=200
+      - QBT_GLOBAL_MAX_UPLOADS=20
+      - QBT_GLOBAL_MAX_DOWNLOAD_RATE=0
+      - QBT_GLOBAL_MAX_UPLOAD_RATE=0
+      - QBT_MAX_ACTIVE_DOWNLOADS=3
+      - QBT_MAX_ACTIVE_UPLOADS=3
+      - QBT_MAX_ACTIVE_TORRENTS=5
+          
+    # Health check
+    healthcheck:
+      test: ["CMD", "/healthcheck.sh"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  data:
+    driver: local
+
+networks:
+  torrent:
+    name: torrent
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/24
+          gateway: 172.20.0.1
+    driver_opts:
+      com.docker.network.bridge.name: br-qbittorrent
+      com.docker.network.bridge.enable_icc: "true"
+      com.docker.network.bridge.enable_ip_masquerade: "true"
+      com.docker.network.bridge.host_binding_ipv4: "0.0.0.0"
+    

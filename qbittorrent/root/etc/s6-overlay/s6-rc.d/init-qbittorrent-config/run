@@ -1,0 +1,80 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+DATADIR=${DATADIR:-/data}
+CONFIGDIR=${CONFIGDIR:-/config}
+QBITTORRENT_CONFIG="${CONFIGDIR}/config/qBittorrent.conf"
+
+# make folders if required
+mkdir -p "${DATADIR}" "${CONFIGDIR}" /run/qbittorrent
+
+# load env file if it exists
+if [[ -f "${CONFIGDIR}/env" ]]
+then
+    # shellcheck source=/dev/null
+    source "${CONFIGDIR}/env"
+fi
+
+# Initialize default values for qBittorrent configuration variables
+export QBT_WEBUI_PORT="${QBT_WEBUI_PORT:-${PORT:-8080}}"
+export QBT_WEBUI_ENABLED="${QBT_WEBUI_ENABLED:-true}"
+export QBT_WEBUI_PASSWORD="${QBT_WEBUI_PASSWORD:-}"
+export QBT_WEBUI_ROOTDIR="${QBT_WEBUI_ROOTDIR:-${CONFIGDIR}/webui}"
+export QBT_TORRENT_PORT="${QBT_TORRENT_PORT:-6881}"
+export QBT_TORRENT_IFACE_ADDR="${QBT_TORRENT_IFACE_ADDR:-0.0.0.0}"
+export QBT_MEMORY_WORKING_SET_LIMIT="${QBT_MEMORY_WORKING_SET_LIMIT:-1024}"
+export QBT_GLOBAL_MAX_CONNECTIONS="${QBT_GLOBAL_MAX_CONNECTIONS:-200}"
+export QBT_GLOBAL_MAX_UPLOADS="${QBT_GLOBAL_MAX_UPLOADS:-20}"
+export QBT_GLOBAL_MAX_DOWNLOAD_RATE="${QBT_GLOBAL_MAX_DOWNLOAD_RATE:-0}"
+export QBT_GLOBAL_MAX_UPLOAD_RATE="${QBT_GLOBAL_MAX_UPLOAD_RATE:-0}"
+export QBT_ANNOUNCE_IP="${QBT_ANNOUNCE_IP:-}"
+export QBT_ANNOUNCE_TRACKERS="${QBT_ANNOUNCE_TRACKERS:-}"
+export QBT_MAX_ACTIVE_DOWNLOADS="${QBT_MAX_ACTIVE_DOWNLOADS:-3}"
+export QBT_MAX_ACTIVE_UPLOADS="${QBT_MAX_ACTIVE_UPLOADS:-3}"
+export QBT_MAX_ACTIVE_TORRENTS="${QBT_MAX_ACTIVE_TORRENTS:-5}"
+
+# Generate configuration file if GENERATE_CONFIG is true, 1, True, TRUE or not defined
+if [[ -z "${GENERATE_CONFIG}" ]] || [[ "${GENERATE_CONFIG,,}" == "true" ]] || [[ "${GENERATE_CONFIG}" == "1" ]]
+then
+    echo "* Generating default configuration from environment variables ..."
+    mkdir -p $(dirname "${QBITTORRENT_CONFIG}")
+    # Render a template configuration file
+    # expand variables + preserve formatting
+    eval "echo \"$(cat /defaults/qBittorrent.conf.template)\"" > ${QBITTORRENT_CONFIG}
+
+    # Update WebUI password if QBT_WEBUI_PASSWORD is set
+    if [[ -n "${QBT_WEBUI_PASSWORD}" ]]
+    then
+        if grep -q '^WebUI\\Password_PBKDF2=.*' "${QBITTORRENT_CONFIG}"
+        then
+            echo "* Updating WebUI\\Password_PBKDF2 entry in $QBITTORRENT_CONFIG"
+            password=$(python /usr/local/bin/pbkdf2 "$QBT_WEBUI_PASSWORD")
+            if [ -n "$password" ]
+            then
+                sed -i "s|^WebUI\\\\Password_PBKDF2=.*|WebUI\\\\Password_PBKDF2=\"@ByteArray($password)\"|" "$QBITTORRENT_CONFIG"
+            else
+                echo "* ERROR: Password generation failed. Not updated" >&2
+                exit 1
+            fi
+        else
+            echo "* No WebUI\\Password_PBKDF2 entry found in $QBITTORRENT_CONFIG. Nothing to do."
+        fi
+    fi
+fi
+
+if [[ -z ${LSIO_NON_ROOT_USER} ]]
+then
+    # chown download directory if currently not set to abc
+    if grep -qe ' /${DATADIR} ' /proc/mounts
+    then
+        lsiown abc:abc "${DATADIR}"
+    fi
+    # permissions
+    lsiown -R abc:abc "${CONFIGDIR}" /run/qbittorrent
+fi
+
+# remove orphan pid file
+if [[ -f /run/qbittorrent/qbittorrent.pid ]]
+then
+    rm -f /run/qbittorrent/qbittorrent.pid
+fi

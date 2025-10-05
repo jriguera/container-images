@@ -1,0 +1,29 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+cmd="/healthcheck.sh"
+
+CONFIGDIR="${CONFIGDIR:-/config}"
+QBITTORRENT_CONFIG="${CONFIGDIR}/config/qBittorrent.conf"
+
+# Check if qBittorrent.conf exists
+if [[ ! -f "${QBITTORRENT_CONFIG}" ]]
+then
+    echo "* Error: qBittorrent config file ${QBITTORRENT_CONFIG} not found" >&2
+    exit 1
+fi
+
+webui_port=$(grep -Po "^WebUI\\\Port=\K(.*)" "${QBITTORRENT_CONFIG}")
+[[ -z ${webui_port} ]] && webui_port="${QBT_WEBUI_PORT:-${PORT:-8080}}"
+torrenting_port=$(grep -Po "^Session\\\Port=\K(.*)" "${QBITTORRENT_CONFIG}")
+
+if [[ -z ${LSIO_NON_ROOT_USER} ]]
+then
+    s6-notifyoncheck -d -n 300 -w 60000 -c "${cmd}" s6-setuidgid abc qbittorrent-nox \
+        --confirm-legal-notice --profile=/ --relative-fastresume --webui-port="${webui_port}" --torrenting-port="${torrenting_port}" &
+    wait
+else
+    s6-notifyoncheck -d -n 300 -w 60000 -c "${cmd}" qbittorrent-nox \
+        --confirm-legal-notice --profile=/ --relative-fastresume --webui-port="${webui_port}" --torrenting-port="${torrenting_port}" &
+    wait
+fi

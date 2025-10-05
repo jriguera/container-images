@@ -1,0 +1,73 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+set -eu
+
+DATADIR="${DATADIR:-/data}"
+CONFIGDIR="${CONFIGDIR:-/config}"
+QBITTORRENT_CONFIG="${CONFIGDIR}/config/qBittorrent.conf"
+
+# Repository (format: "owner/repo"):  VueTorrent/VueTorrent or lantean-code/qbtmud
+QBT_WEBUI_REPO="${QBT_WEBUI_REPO:-lantean-code/qbtmud}"
+# Version to install (leave empty for latest)
+QBT_WEBUI_VERSION="${QBT_WEBUI_VERSION:-}"
+QBT_WEBUI_ROOTDIR=$(basename "${QBT_WEBUI_ROOTDIR:-${CONFIGDIR}/webui}")
+
+# check prerequisites
+[ -f "$QBITTORRENT_CONFIG" ] || exit 1
+cd "${CONFIGDIR}" || exit 1
+
+api_url="https://api.github.com/repos/$QBT_WEBUI_REPO/releases/latest"
+[ -n "$QBT_WEBUI_VERSION" ] && api_url="https://api.github.com/repos/$QBT_WEBUI_REPO/releases/tags/$QBT_WEBUI_VERSION"
+
+# Check if Alternative UI is enabled
+if [ "$(sed -n 's/^WebUI\\AlternativeUIEnabled=//p' "$QBITTORRENT_CONFIG")" = "false" ]
+then
+    echo "* Alternative UI disabled in qBittorrent config. Nothing to do."
+    exit 0
+fi
+
+# Get release info
+release=$(curl -s "$api_url")
+QBT_WEBUI_VERSION=$(echo "$release" | jq -r '.tag_name')
+download_url=$(echo "$release" | jq -r '.assets[] | select(.name | endswith(".zip")) | .browser_download_url')
+
+echo "* Checking repository $QBT_WEBUI_REPO ..."
+if [ -z "$QBT_WEBUI_VERSION" ] || [ -z "$download_url" ]
+then
+    echo "* Failed to fetch release info for $QBT_WEBUI_REPO. Disabling Alternative UI in qBittorrent..." >&2
+    sed -i 's/^WebUI\\AlternativeUIEnabled=.*/WebUI\\AlternativeUIEnabled=false/' "$QBITTORRENT_CONFIG"
+fi
+
+target_dir="$(basename "$QBT_WEBUI_REPO")-$QBT_WEBUI_VERSION"
+# Check if already installed
+if [ -L "$QBT_WEBUI_ROOTDIR" ] && [ "$(readlink "$QBT_WEBUI_ROOTDIR" | cut -d'/' -f1)" = "$target_dir" ]
+then
+    echo "* $QBT_WEBUI_REPO $QBT_WEBUI_VERSION is already installed. Nothing to do."
+    exit 0
+fi
+
+# Download and unzip if not already present
+if [ ! -d "$target_dir" ]
+then
+    filename=$(basename "$download_url")
+    echo -n "* Downloading $QBT_WEBUI_REPO $QBT_WEBUI_VERSION ..."
+    curl -sSL -w "Downloaded %{size_download} bytes in %{time_total} seconds\n" -o "$filename" "$download_url"
+
+    mkdir -p "$target_dir"
+    echo "* Unzipping $filename into $target_dir ..."
+    unzip -oq "$filename" -d "$target_dir"
+    rm -f "$filename"
+fi
+
+# Replace symlink
+target_link=$(dirname $(find "$target_dir" -maxdepth 2 -type d -name public | head -n 1))
+rm -f "$QBT_WEBUI_ROOTDIR"
+ln -sf "$target_link" "$QBT_WEBUI_ROOTDIR"
+
+echo "* $QBT_WEBUI_REPO $QBT_WEBUI_VERSION installed in $target_dir"
+echo "* Symlink created: "$QBT_WEBUI_ROOTDIR" -> $target_link"
+
+if [[ -z "${LSIO_NON_ROOT_USER:-}" ]]
+then
+    lsiown -R abc:abc "${CONFIGDIR}"
+fi
