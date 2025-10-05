@@ -1,0 +1,136 @@
+name: Build and Push aMule Container
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'amule-v*' ]
+    paths:
+      - 'amule/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'amule/**'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: amule
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=match,pattern=amule-v(.*),group=1
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/amule-v') }}
+            type=sha
+
+      - name: Log in to GH Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: amule
+          file: amule/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          # labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+            VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+            COMMIT_SHA=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.revision'] }}
+
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/amule-v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version
+        id: version
+        run: |
+          tag_name=${GITHUB_REF#refs/tags/}
+          version=${tag_name#amule-v}
+          echo "tag_name=$tag_name" >> $GITHUB_OUTPUT
+          echo "version=$version" >> $GITHUB_OUTPUT
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          # Get the previous amule tag
+          prev_tag=$(git tag -l "amule-v*" --sort=-version:refname | head -2 | tail -1 2>/dev/null || echo "")
+          # Generate release notes
+          cat > release_notes.md << EOF
+          # aMule Container Release ${{ steps.version.outputs.version }}
+          
+          ## Container Images
+          
+          The following container images have been built and pushed to the GitHub Container Registry:
+          
+          - \`ghcr.io/${{ github.repository_owner }}/amule:${{ steps.version.outputs.version }}\`
+          - \`ghcr.io/${{ github.repository_owner }}/amule:latest\`
+          
+          ## Usage
+          
+          \`\`\`bash
+          docker pull ghcr.io/${{ github.repository_owner }}/amule:${{ steps.version.outputs.version }}
+          # or
+          docker pull ghcr.io/${{ github.repository_owner }}/amule:latest
+          \`\`\`
+          
+          ## Changes
+          EOF
+          if [ -n "$prev_tag" ]; then
+            echo "" >> release_notes.md
+            echo "Changes since $prev_tag:" >> release_notes.md
+            echo "" >> release_notes.md
+            git log --oneline --no-merges ${prev_tag}..HEAD -- amule/ >> release_notes.md
+          else
+            echo "" >> release_notes.md
+            echo "Initial release of aMule container" >> release_notes.md
+          fi
+          echo "" >> release_notes.md
+          echo "## Base Image" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "This container is based on LinuxServer.io base images and includes:" >> release_notes.md
+          echo "- S6-overlay for process supervision" >> release_notes.md
+          echo "- Automatic user/group creation (PUID/PGID)" >> release_notes.md
+          echo "- Configuration file templating" >> release_notes.md
+          echo "- Health checks" >> release_notes.md
+
+      - name: Create a Release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ steps.version.outputs.tag_name }}
+          release_name: aMule v${{ steps.version.outputs.version }}
+          body_path: release_notes.md
+          generate_release_notes: false
