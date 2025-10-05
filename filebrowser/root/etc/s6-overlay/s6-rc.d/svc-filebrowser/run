@@ -1,0 +1,12 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+cmd="/healthcheck.sh"
+
+if [[ -z ${LSIO_NON_ROOT_USER} ]]; then
+    s6-notifyoncheck -d -n 60 -w 60000 -c "${cmd}" s6-setuidgid abc filebrowser --config="${FB_CONFIG_FILE}" &
+    wait
+else
+    s6-notifyoncheck -d -n 60 -w 60000 -c "${cmd}" filebrowser --config="${FB_CONFIG_FILE}" &
+    wait
+fi

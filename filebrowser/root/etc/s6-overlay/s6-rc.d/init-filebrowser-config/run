@@ -1,0 +1,84 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+# Filebrowser configuration parameters and defaults
+FB_PORT=${FB_PORT:-${PORT}}
+FB_LOG_DST="${FB_LOG_DST:-stdout}"
+FB_BASE_URL="${FB_BASE_URL:-}"
+FB_ADDRESS="${FB_ADDRESS:-}"
+FB_CONFIG_FILE="${FB_CONFIG_FILE:-$CONFIGDIR/settings.json}"
+# Reset DB on startup
+RESET_DB="${RESET_DB:-false}"
+USERS="${USERS:-}"
+
+# if no users are provided, set auth method to noauth and define a default admin user with admin password
+if [[ -z "${USERS}" ]]
+then
+    FB_AUTH_METHOD="${FB_AUTH_METHOD:-noauth}"
+    USERS="admin:admin:admin"
+else
+    FB_AUTH_METHOD="${FB_AUTH_METHOD:-json}"
+fi
+
+# make folders if required
+mkdir -p "${DATADIR}" "${CONFIGDIR}" /run/filebrowser
+
+# load env file if it exists
+if [[ -f "${CONFIGDIR}/env" ]]
+then
+    # shellcheck source=/dev/null
+    source "${CONFIGDIR}/env"
+fi
+
+if [[ "${FB_CONFIG_FILE}" == "$CONFIGDIR/settings.json" ]]
+then
+    echo "* Generating default configuration from environment variables ..."
+    # Render a template configuration file
+    # expand variables + preserve formatting
+    eval "echo \"$(cat /defaults/settings.json.template)\"" > "${FB_CONFIG_FILE}"
+else
+    echo "* Using provided configuration file ..."
+fi
+
+FB_DATABASE="${FB_DATABASE:-$(jq -r .database ${FB_CONFIG_FILE})}"
+if [[ "${RESET_DB}" =~ (true|TRUE|True) ]]
+then
+    echo "* Reseting DB: Removing existing database file ${FB_DATABASE} ..."
+    rm -f "${FB_DATABASE}"
+fi
+# If does not exist a the FB_DATABASE file, initialize it
+if [[ ! -f "${FB_DATABASE}" ]]
+then
+    echo "* Initializing database file ${FB_DATABASE} ..."
+    filebrowser config init --config="${FB_CONFIG_FILE}" --database="${FB_DATABASE}" --minimum-password-length 2 --auth.method "${FB_AUTH_METHOD}"
+fi
+
+# Define a list of user:password:perm1,perm2... list separated by spaces
+USERS_LIST=(${USERS:-})
+for item in ${USERS_LIST[@]}
+do
+    userpass=(${item//:/ })
+    echo "* Allowing user "${userpass[0]}" and its password ..."
+    perms=(${userpass[2]//,/ })
+    # if no permissions are provided, set admin as default
+    [[ -z "${userpass[2]}" ]] &&  perms=("admin") || perms=(${userpass[2]//,/ })
+    if filebrowser --config="${FB_CONFIG_FILE}" --database="${FB_DATABASE}" users find "${userpass[0]}" &> /dev/null
+    then
+        echo "* User already exists, updating password"
+        filebrowser --config="${FB_CONFIG_FILE}" --database="${FB_DATABASE}" users update "${userpass[0]}" --password "${userpass[1]}" "${perms[@]/#/--perm.}"
+    else
+        echo "* User does not exist, creating it"
+        filebrowser --config="${FB_CONFIG_FILE}" --database="${FB_DATABASE}" users add "${userpass[0]}" "${userpass[1]}" "${perms[@]/#/--perm.}"
+    fi
+done
+
+if [[ -z ${LSIO_NON_ROOT_USER} ]]
+then
+    lsiown -R abc:abc /run/filebrowser  "${DATADIR}" "${CONFIGDIR}"
+fi
+
+# remove orphan pid file
+if [[ -f /run/filebrowser/filebrowser.pid ]]
+then
+    rm -f /run/filebrowser/filebrowser.pid
+fi
