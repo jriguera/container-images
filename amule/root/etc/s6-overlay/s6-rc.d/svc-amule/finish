@@ -1,0 +1,6 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+echo "Caught SIGTERM signal!"
+
+HOME=${CONFIGDIR} amulecmd --command shutdown

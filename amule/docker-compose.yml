@@ -1,0 +1,55 @@
+version: "3.9"
+services:
+  amule:
+    build:
+      context: .
+    image: amule
+    restart: unless-stopped
+    networks:
+      - amule
+    ports:
+      - "4711:4711"      # Web interface
+      - "4712:4712"      # External Connect
+    volumes:
+      - data:/data
+      - ./config:/config
+    environment:
+      # Network Ports
+      - AMULE_PORT=4662
+      - AMULE_UDPPORT=4672
+      - AMULE_UDPENABLE=true
+      # Authentication
+      - AMULE_PASSWORD=mysecretpassword
+      # AMULE_PASSWORD_HASH=6e0600b99a12d7e70687f0937a152fd5  # Pre-computed MD5 hash
+      # External Connect
+      - AMULE_EC_ADDRESS=0.0.0.0
+      - AMULE_EC_ECPORT=4712
+      # Web Server
+      - AMULE_WEBSERVER_PORT=4711
+      - AMULE_WEBSERVER_TEMPLATE=bootstrap
+      # Behavior
+      - GENERATE_CONFIG=true
+      - RECURSIVE_SHARE=true
+      - FIX_KAD_GRAPH=true
+      - DOWNLOAD_RESOURCES=true
+      # Optional
+      - AMULE_YOURHOSTNAME=my-amule-server
+
+volumes:
+  data:
+    driver: local
+
+networks:
+  amule:
+    name: amule
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/24
+          gateway: 172.20.0.1
+    driver_opts:
+      com.docker.network.bridge.name: br-amule
+      com.docker.network.bridge.enable_icc: "true"
+      com.docker.network.bridge.enable_ip_masquerade: "true"
+      com.docker.network.bridge.host_binding_ipv4: "0.0.0.0"

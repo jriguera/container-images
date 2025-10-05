@@ -1,0 +1,106 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+# Function to get a configuration value from a config file
+# Usage: get_config_value "section_name" "key_name"
+# Example: get_config_value "WebServer" "Port"
+get_config_value() {
+    local section="$1"
+    local key="$2"
+    local configfile="${CONFIGDIR}/amule.conf"
+
+    # Validate parameters
+    if [[ -z "$section" || -z "$key" ]]; then
+        echo "Error: Both section and key parameters are required" >&2
+        echo "Usage: get_config_value \"section_name\" \"key_name\"" >&2
+        return 1
+    fi
+    # Check if config file exists
+    if [[ ! -f "$configfile" ]]; then
+        echo "Error: Config file '$configfile' not found" >&2
+        return 1
+    fi
+    # Run the awk command to extract the value
+    awk -F'=' -v section="$section" -v k="$key" '
+    BEGIN { target = "[" section "]" } 
+    /^\[/ { 
+        line = $0; 
+        gsub(/^[[:space:]]+|[[:space:]]+$/, "", line); 
+        inside = (line == target); 
+        next 
+    } 
+    /^[[:space:]]*#/ { next } 
+    inside && NF >= 2 { 
+        key_name = $1; 
+        gsub(/^[[:space:]]+|[[:space:]]+$/, "", key_name); 
+        if (key_name == k) { 
+            $1 = ""; 
+            sub(/^=/, ""); 
+            sub(/^[[:space:]]+/, ""); 
+            sub(/[[:space:]]+$/, ""); 
+            print; 
+            exit 
+        } 
+    }' "$configfile"
+}
+
+
+if [[ "${RECURSIVE_SHARE,,}" == "true" ]] || [[ "${RECURSIVE_SHARE}" == "1" ]]
+then
+    downloads=$(get_config_value "eMule" "IncomingDir")
+    echo "* Generating shared directories list from $downloads ..."
+    find ${downloads} -type d -not -empty \
+    | uniq \
+    | grep -v lost+found \
+    | grep -v .Trash \
+    | sort -ur > ${CONFIGDIR}/shareddir.dat
+else
+    echo > ${CONFIGDIR}/shareddir.dat
+fi
+
+if [[ "${FIX_KAD_GRAPH,,}" == "true" ]] || [[ "${FIX_KAD_GRAPH}" == "1" ]]
+then
+    # Fix bug https://github.com/amule-project/amule/issues/265
+    # Removes the images causing the issue. They won't be visible in the Web UI.
+    # grep -rnw '/usr/share/amule/webserver' -e 'amule_stats_kad.png'
+    echo "* Removing Kad stats graph to fix potential crash ..."
+    sed -i 's/amule_stats_kad.png//g' /usr/share/amule/webserver/default/amuleweb-main-kad.php
+    sed -i 's/amule_stats_kad.png//g' /usr/share/amule/webserver/reloaded/amuleweb-main-kad.php
+    sed -i 's/amule_stats_kad.png//g' /usr/share/amule/webserver/reloaded/amuleweb-main-stats.php
+fi
+
+if [[ "${DOWNLOAD_RESOURCES,,}" == "true" ]] || [[ "${DOWNLOAD_RESOURCES}" == "1" ]]
+then
+    # Fix bug https://github.com/ngosang/docker-amule/issues/33
+    # Download nodes.dat if the file does not exist
+    IPFilterURL=$(get_config_value "eMule" "IPFilterURL")
+    KadNodesUrl=$(get_config_value "eMule" "KadNodesUrl")
+    Ed2kServersUrl=$(get_config_value "eMule" "Ed2kServersUrl")
+
+    if [[ ! -f "${CONFIGDIR}/nodes.dat" ]] && [[ -n "$KadNodesUrl" ]]
+    then
+        echo "Downloading nodes.dat from $KadNodesUrl ..."
+        curl -s -o "${CONFIGDIR}/nodes.dat" "${KadNodesUrl}"
+    else
+        echo "* File nodes.dat already exist or KadNodesUrl is empty. You can disable this mod with DOWNLOAD_RESOURCES=false"
+    fi
+    if [[ ! -f "${CONFIGDIR}/ipfilter.dat" ]] && [[ -n "$IPFilterURL" ]]
+    then
+        echo "Downloading ipfilter.dat from $IPFilterURL ..."
+        curl -s -o "${CONFIGDIR}/ipfilter.dat" "${IPFilterURL}"
+    else
+        echo "* File ipfilter.dat already exist or IPFilterURL is empty. You can disable this mod with DOWNLOAD_RESOURCES=false"
+    fi
+    if [[ ! -f "${CONFIGDIR}/servers.met" ]] && [[ -n "$Ed2kServersUrl" ]]
+    then
+        echo "Downloading servers.met from $Ed2kServersUrl ..."
+        curl -s -o "${CONFIGDIR}/servers.met" "${Ed2kServersUrl}"
+    else
+        echo "* File servers.met already exist or Ed2kServersUrl is empty. You can disable this mod with DOWNLOAD_RESOURCES=false"
+    fi
+fi
+
+if [[ -z ${LSIO_NON_ROOT_USER} ]]
+then
+    lsiown -R abc:abc "${CONFIGDIR}"
+fi

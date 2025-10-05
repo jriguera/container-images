@@ -1,0 +1,55 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+DATADIR=${DATADIR:-/data}
+CONFIGDIR=${CONFIGDIR:-/config}
+
+# make folders if required
+mkdir -p "${DATADIR}" "${CONFIGDIR}" /run/amule
+
+# load env file if it exists
+if [[ -f "${CONFIGDIR}/env" ]]
+then
+    # shellcheck source=/dev/null
+    source "${CONFIGDIR}/env"
+fi
+
+# Initialize default values for amule configuration variables
+export AMULE_PORT="${AMULE_PORT:-4662}"
+export AMULE_UDPPORT="${AMULE_UDPPORT:-4672}"
+export AMULE_UDPENABLE="${AMULE_UDP_ENABLE:-1}"
+export AMULE_EC_ECPORT="${AMULE_EC_ECPORT:-4712}"
+export AMULE_EC_ADDRESS="${AMULE_EC_ADDRESS:-127.0.0.1}"
+export AMULE_WEBSERVER_PORT="${AMULE_WEBSERVER_PORT:-${PORT:-4711}}"
+export AMULE_WEBSERVER_TEMPLATE="${AMULE_WEBSERVER_TEMPLATE:-bootstrap}"
+export AMULE_YOURHOSTNAME="${AMULE_YOURHOSTNAME:-}"
+
+if [[ -n "${AMULE_PASSWORD}" ]]
+then
+    echo "* Computing MD5 hash for provided password..."
+    AMULE_PASSWORD_HASH=$(echo -n "${AMULE_PASSWORD}" | md5sum | cut -d' ' -f1)
+    export AMULE_PASSWORD_HASH
+else
+    export AMULE_PASSWORD_HASH="${AMULE_PASSWORD_HASH:-6e0600b99a12d7e70687f0937a152fd5}"  # Default MD5 hash for "amule"
+fi
+
+# Generate configuration file if GENERATE_CONFIG is true, 1, True, TRUE or not defined
+if [[ -z "${GENERATE_CONFIG}" ]] || [[ "${GENERATE_CONFIG,,}" == "true" ]] || [[ "${GENERATE_CONFIG}" == "1" ]]
+then
+    echo "* Generating default configuration from environment variables ..."    
+    # Render a template configuration file
+    # expand variables + preserve formatting
+    eval "echo \"$(cat /defaults/amule.conf.template)\"" > "${CONFIGDIR}/amule.conf"
+    eval "echo \"$(cat /defaults/remote.conf.template)\"" > "${CONFIGDIR}/remote.conf"
+fi
+
+if [[ -z ${LSIO_NON_ROOT_USER} ]]
+then
+    lsiown -R abc:abc /run/amule  "${DATADIR}" "${CONFIGDIR}"
+fi
+
+# remove orphan pid file
+if [[ -f /run/amule/amule.pid ]]
+then
+    rm -f /run/amule/amule.pid
+fi

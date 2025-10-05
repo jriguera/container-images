@@ -1,0 +1,20 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+cmd="/healthcheck.sh"
+
+if [[ -z ${LSIO_NON_ROOT_USER} ]]
+then
+    pushd ${CONFIGDIR} >/dev/null
+        # amulecmd looks for .aMule in home directory, no matter arguments
+        # a symlink to CONFIGDIR is created because /config is the home for abc user
+        [[ -L .aMule ]] ||  ln -sf . .aMule
+    popd >/dev/null
+    s6-notifyoncheck -d -n 300 -w 60000 -c "${cmd}" s6-setuidgid abc amuled --config-dir=${CONFIGDIR} --log-stdout &
+    wait
+else
+    ln -sf ${CONFIGDIR} /root/.aMule
+    s6-notifyoncheck -d -n 300 -w 60000 -c "${cmd}" amuled --config-dir=${CONFIGDIR} --log-stdout &
+    wait
+fi
+
