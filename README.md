@@ -51,3 +51,12 @@ All containers inherit LinuxServer.io base image features:
 - Health checks
 
 For more information about LinuxServer.io base images, visit: https://docs.linuxserver.io/
+
+# Release Process
+
+The workflow will build, push with latest tag, and create a release when:
+
+* Make changes to the image container directory
+* Commit and push to trigger a build
+* Create an annotated tag eg: `git tag -a amule-v1.0.0 -m "aMule v1.0.0"`
+* Push the tag, eg: `git push origin amule-v1.0.0`
