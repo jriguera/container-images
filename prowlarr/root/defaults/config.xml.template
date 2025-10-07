@@ -1,0 +1,18 @@
+<Config>
+  <BindAddress>*</BindAddress>
+  <Port>${PROWLARR_PORT:-9696}</Port>
+  <SslPort>6969</SslPort>
+  <EnableSsl>False</EnableSsl>
+  <LaunchBrowser>True</LaunchBrowser>
+  <ApiKey>${PROWLARR_APIKEY}</ApiKey>
+  <AuthenticationMethod>${PROWLARR_AUTH:-None}</AuthenticationMethod>
+  <AuthenticationRequired>${PROWLARR_AUTH_MODE:-DisabledForLocalAddresses}</AuthenticationRequired>
+  <Branch>master</Branch>
+  <LogLevel>info</LogLevel>
+  <SslCertPath></SslCertPath>
+  <SslCertPassword></SslCertPassword>
+  <UrlBase>${PROWLARR_URLBASE:-}</UrlBase>
+  <InstanceName>Prowlarr</InstanceName>
+  <UpdateMechanism>Docker</UpdateMechanism>
+  <AnalyticsEnabled>False</AnalyticsEnabled>
+</Config>

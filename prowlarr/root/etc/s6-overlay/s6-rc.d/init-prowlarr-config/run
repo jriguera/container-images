@@ -1,0 +1,47 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+
+set -x
+
+CONFIGDIR=${CONFIGDIR:-/config}
+PROWLARR_CONFIG_FILE="${PROWLARR_CONFIG_FILE:-$CONFIGDIR/config.xml}"
+
+# https://wiki.servarr.com/prowlarr/environment-variables
+
+# Prowlarr configuration parameters and defaults
+export PROWLARR_PORT=${PROWLARR_PORT:-${PORT}}
+export PROWLARR_APIKEY=${PROWLARR_APIKEY:-}
+export PROWLARR_AUTH=${PROWLARR_AUTH:-Forms} # None, Forms, Basic
+export PROWLARR_URLBASE=${PROWLARR_URLBASE:-}
+export PROWLARR_AUTH_MODE=${PROWLARR_AUTH_MODE:-DisabledForLocalAddresses}
+
+# make folders if required
+mkdir -p "${CONFIGDIR}"
+
+# load env file if it exists
+if [[ -f "${CONFIGDIR}/env" ]]
+then
+    # shellcheck source=/dev/null
+    source "${CONFIGDIR}/env"
+fi
+
+# Generate configuration file if GENERATE_CONFIG is true, 1, True, TRUE or not defined
+if [[ -z "${GENERATE_CONFIG}" ]] || [[ "${GENERATE_CONFIG,,}" == "true" ]] || [[ "${GENERATE_CONFIG}" == "1" ]]
+then
+    echo "* Generating default configuration from environment variables ..."    
+    # Render a template configuration file
+    # expand variables + preserve formatting
+    eval "echo \"$(cat /defaults/config.xml.template)\"" > "${PROWLARR_CONFIG_FILE}"
+fi
+
+if [[ -z "${LSIO_NON_ROOT_USER}" ]]
+then
+    lsiown -R abc:abc "${CONFIGDIR}"
+fi
+
+# remove orphan pid file
+if [[ -f "${CONFIGDIR}/prowlarr.pid" ]]
+then
+    rm -f "${CONFIGDIR}/prowlarr.pid"
+fi

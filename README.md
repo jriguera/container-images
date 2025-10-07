@@ -10,6 +10,7 @@ This repository contains Docker container images for various applications, all b
 | [filebrowser](filebrowser) | Web-based file manager | [README](filebrowser/README.md) |
 | [mosquitto](mosquitto) | Eclipse Mosquitto MQTT broker | [README](mosquitto/README.md) |
 | [qbittorrent](qbittorrent) | qBittorrent BitTorrent client | [README](qbittorrent/README.md) |
+| [prowlarr](prowlarr) | Prowlarr indexer | [README](prowlarr/README.md) |
 
 ## Common Environment Variables
 

@@ -1,0 +1,15 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+cmd="/healthcheck.sh"
+
+CONFIGDIR="${CONFIGDIR:-/config}"
+
+if [[ -z ${LSIO_NON_ROOT_USER} ]]
+then
+    exec s6-notifyoncheck -d -n 300 -w 60000 -c "${cmd}" \
+        cd /opt/prowlarr s6-setuidgid abc /opt/prowlarr/Prowlarr -nobrowser -data=${CONFIGDIR}
+else
+    exec s6-notifyoncheck -d -n 300 -w 60000 -c "${cmd}" \
+        cd /opt/prowlarr /opt/prowlarr/Prowlarr -nobrowser -data=${CONFIGDIR}
+fi

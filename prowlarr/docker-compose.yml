@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  prowlarr:
+    build:
+      context: .
+    image: prowlarr:latest
+    container_name: prowlarr
+    restart: unless-stopped
+    networks:
+      - arr
+    ports:
+      - "9696:9696"      # Web interface
+    volumes:
+      - ./config:/config
+    environment:
+      # Network Configuration
+      - PROWLARR_PORT=9696
+      - PROWLARR_APIKEY=your-api-key-here
+          
+    # Health check
+    healthcheck:
+      test: ["CMD", "/healthcheck.sh"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  data:
+    driver: local
+
+networks:
+  arr:
+    name: arr
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/24
+          gateway: 172.20.0.1
+    driver_opts:
+      com.docker.network.bridge.name: br-prowlarr
+      com.docker.network.bridge.enable_icc: "true"
+      com.docker.network.bridge.enable_ip_masquerade: "true"
+      com.docker.network.bridge.host_binding_ipv4: "0.0.0.0"
+    
