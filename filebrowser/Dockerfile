@@ -26,7 +26,6 @@ LABEL maintainer="jriguera"
 ENV DATADIR=/data
 ENV CONFIGDIR=/config
 ENV PORT=8080
-ENV FB_USER=abc
 
 # copy local files
 COPY root/ /

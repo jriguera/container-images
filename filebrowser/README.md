@@ -22,7 +22,7 @@ docker build \
 Given the docker image with name `filebrowser` from Github Package Repository:
 
 ```
-docker run --rm -ti --name fb -p 8080:8080 -e FB_AUTH_METHOD="noauth" -e USERS="admin:admin1" -e FB_PORT=8080 -v $(pwd)/data:/data -v $(pwd)/config:/config filebrowser
+docker run --rm -ti --name fb -p 8080:8080 -e FB_AUTH_METHOD="noauth" -e FB_USERS="admin:admin1" -e FB_PORT=8080 -v $(pwd)/data:/data -v $(pwd)/config:/config filebrowser
 ```
 
 You can also use environment variables to automatically define some settings:
@@ -34,13 +34,13 @@ FB_ADDRESS=""
 FB_LOG_DST="stdout"
 FB_AUTH_METHOD="noauth"
 RESET_DB="false"
-USERS="admin:a1 user2:b2:admin,execute"
+FB_USERS="admin:a1 user2:b2:admin,execute"
 ```
 
 And use them:
 
 ```
-docker run --name fb -p 8080:8080 -v $(pwd)/data:/data -v $(pwd)/config:/config -e FB_AUTH_METHOD="noauth" -e USERS="admin:admin1" -e FB_PORT=8080 -e FB_BASE_URL="/files" -d ghcr.io/jriguera/docker-filebrowser/filebrowser:latest
+docker run --name fb -p 8080:8080 -v $(pwd)/data:/data -v $(pwd)/config:/config -e FB_AUTH_METHOD="noauth" -e FB_USERS="admin:admin1" -e FB_PORT=8080 -e FB_BASE_URL="/files" -d ghcr.io/jriguera/docker-filebrowser/filebrowser:latest
 ```
 
 ## Variables

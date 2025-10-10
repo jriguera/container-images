@@ -9,13 +9,13 @@ FB_ADDRESS="${FB_ADDRESS:-}"
 FB_CONFIG_FILE="${FB_CONFIG_FILE:-$CONFIGDIR/settings.json}"
 # Reset DB on startup
 RESET_DB="${RESET_DB:-false}"
-USERS="${USERS:-}"
+FB_USERS="${FB_USERS:-}"
 
 # if no users are provided, set auth method to noauth and define a default admin user with admin password
-if [[ -z "${USERS}" ]]
+if [[ -z "${FB_USERS}" ]]
 then
     FB_AUTH_METHOD="${FB_AUTH_METHOD:-noauth}"
-    USERS="admin:admin:admin"
+    FB_USERS="admin:admin:admin"
 else
     FB_AUTH_METHOD="${FB_AUTH_METHOD:-json}"
 fi
@@ -54,7 +54,7 @@ then
 fi
 
 # Define a list of user:password:perm1,perm2... list separated by spaces
-USERS_LIST=(${USERS:-})
+USERS_LIST=(${FB_USERS:-})
 for item in ${USERS_LIST[@]}
 do
     userpass=(${item//:/ })
