@@ -1,5 +1,5 @@
 {
-  \"port\": ${FB_PORT:-8080},
+  \"port\": ${FB_PORT:-8000},
   \"baseURL\": \"${FB_BASE_URL:-}\",
   \"address\": \"${FB_ADDRESS:-}\",
   \"log\": \"${FB_LOG_DST:-stdout}\",

@@ -25,7 +25,7 @@ LABEL maintainer="jriguera"
 
 ENV DATADIR=/data
 ENV CONFIGDIR=/config
-ENV PORT=8080
+ENV PORT=8000
 
 # copy local files
 COPY root/ /
