@@ -55,7 +55,6 @@ docker-compose up -d
 | `PUID` | `1000` | User ID for running the container |
 | `PGID` | `1000` | Group ID for running the container |
 | `TZ` | `Etc/UTC` | Timezone (e.g., `America/New_York`, `Europe/London`) |
-| `CONFIGDIR` | `/config` | Base configuration directory |
 
 ### WireGuard Server Configuration
 
@@ -90,7 +89,6 @@ Format: `WG_SERVER_ALLOWEDIPS_PEER_<peername>=<cidrs>`
 | `WEBHOOK_IP` | `0.0.0.0` | IP address to bind webhook server |
 | `WEBHOOK_VERBOSE` | `false` | Enable verbose logging for webhook requests |
 | `WEBHOOK_HOTRELOAD` | `true` | Enable hot-reloading of webhook configuration |
-| `CONFIGDIR_WEBHOOK` | `${CONFIGDIR}/webhook` | Webhook configuration directory |
 
 ### Other Services
 

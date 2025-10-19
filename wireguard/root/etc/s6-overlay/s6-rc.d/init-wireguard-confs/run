@@ -2,6 +2,8 @@
 # shellcheck shell=bash
 # shellcheck disable=SC2016,SC1091,SC2183
 
+set -x
+
 # Set default config directory if not provided
 CONFIGDIR="${CONFIGDIR:-/config}"
 CONFIGDIR_SERVER="${CONFIGDIR_SERVER:-$CONFIGDIR/server}"
@@ -221,8 +223,8 @@ then
     check_and_regenerate_confs
 fi
 
-
 if [[ -z ${LSIO_NON_ROOT_USER} ]]
 then
-    lsiown -R abc:abc "${CONFIGDIR_SERVER}" "${CONFIGDIR_TEMPLATES}" "${CONFIGDIR_WGCONFS}"
+    lsiown -R abc:abc "${CONFIGDIR_TEMPLATES}" "${CONFIGDIR_WGCONFS}"
+    [[ -d ${CONFIGDIR_SERVER} ]] && lsiown -R abc:abc "${CONFIGDIR_SERVER}"
 fi

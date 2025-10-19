@@ -7,7 +7,8 @@ CONFIGDIR="${CONFIGDIR:-/config}"
 # Enable ProxySocks by default in client mode
 [[ -z "$WG_PEERS" ]] && PROXY_ENABLED="${PROXY_ENABLED:-true}" || PROXY_ENABLED="${PROXY_ENABLED:-false}" 
 PROXY_ENABLED="${PROXY_ENABLED,,}"
-PROXY_PORT="${PROXY_PORT:-1080}"
+export PROXY_PORT="${PROXY_PORT:-1080}"
+export REQUIRE_AUTH="${REQUIRE_AUTH:-false}"
 
 if [[ ${PROXY_ENABLED} == "false" ]]
 then
