@@ -226,5 +226,5 @@ fi
 if [[ -z ${LSIO_NON_ROOT_USER} ]]
 then
     lsiown -R abc:abc "${CONFIGDIR_TEMPLATES}" "${CONFIGDIR_WGCONFS}"
-    [[ -d ${CONFIGDIR_SERVER} ]] && lsiown -R abc:abc "${CONFIGDIR_SERVER}"
+    [[ -d ${CONFIGDIR_SERVER} ]] && lsiown -R abc:abc "${CONFIGDIR_SERVER}" || true
 fi
