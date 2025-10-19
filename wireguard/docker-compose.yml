@@ -1,0 +1,92 @@
+version: "3.9"
+
+services:
+  wireguard:
+    build:
+      context: .
+      args:
+        BUILD_DATE: "2025-10-20T00:00:00Z"
+        VERSION: "1.0.0"
+        COMMIT_SHA: "main"
+    image: wireguard:latest
+    container_name: wireguard
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+    
+    # Volumes
+    volumes:
+      - ./config:/config
+      - /lib/modules:/lib/modules:ro
+    
+    # Ports
+    ports:
+      - "51820:51820/udp"  # WireGuard VPN
+      - "9000:9000"         # Webhook API
+      - "53:53/udp"       # CoreDNS (optional)
+      - "1080:1080"       # SOCKS5 Proxy (optional)
+    
+    # Environment Variables
+    environment:
+      # Core Configuration
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      
+      # WireGuard Server Configuration
+      - WG_PEERS=laptop,phone,tablet  # Number or comma-separated names
+      - WG_SERVER_PORT=51820
+      # - WG_SERVER_ADDR=vpn.example.com  # Auto-detects public IP if not set
+      - WG_INTERNAL_SUBNET=10.13.13.0
+      - WG_ALLOWEDIPS=0.0.0.0/0, ::/0
+      # - WG_PEERS_DNS=1.1.1.1, 1.0.0.1  # Defaults to VPN gateway if not set
+      - WG_SHOW_QR=true
+      # - WG_PEERS_PERSISTENTKEEPALIVE=all  # or comma-separated peer names
+      
+      # Per-Peer Configuration (optional)
+      # - WG_SERVER_ALLOWEDIPS_PEER_laptop=192.168.1.0/24
+      # - WG_SERVER_ALLOWEDIPS_PEER_phone=10.13.13.0/24
+      
+      # Webhook API Configuration
+      - GENERATE_WEBHOOK_CONFIG=true
+      - WEBHOOK_PORT=9000
+      - WEBHOOK_IP=0.0.0.0
+      - WEBHOOK_VERBOSE=false
+      - WEBHOOK_HOTRELOAD=true
+      # - CONFIGDIR_WEBHOOK=/config/webhook
+      
+      # Other Services
+      # - COREDNS_PORT=53
+      # - PROXY_PORT=1080
+
+networks:
+  default:
+    driver: bridge
+
+# Example configurations:
+#
+# 1. Basic server with 3 numbered peers:
+#    - WG_PEERS=3
+#
+# 2. Named peers with custom server address:
+#    - WG_PEERS=laptop,phone,tablet
+#    - WG_SERVER_ADDR=vpn.example.com
+#
+# 3. Split tunnel (route only specific networks):
+#    - WG_ALLOWEDIPS=10.0.0.0/8, 192.168.0.0/16
+#
+# 4. Custom DNS for peers:
+#    - WG_PEERS_DNS=1.1.1.1, 1.0.0.1
+#
+# 5. Secure webhook API (localhost only):
+#    - WEBHOOK_IP=127.0.0.1
+#    ports:
+#      - "127.0.0.1:9000:9000"
+#
+# 6. Disable webhook config generation (provide your own):
+#    - GENERATE_WEBHOOK_CONFIG=false
+#    volumes:
+#      - ./custom-hooks.yaml:/config/webhook/hooks.yaml:ro

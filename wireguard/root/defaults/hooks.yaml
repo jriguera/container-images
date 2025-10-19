@@ -1,0 +1,77 @@
+---
+# Webhook configuration for WireGuard management scripts
+# This file defines HTTP endpoints for executing WireGuard management commands
+
+- id: "wg-status"
+  execute-command: "/usr/local/bin/wg-json.sh"
+  command-working-directory: "/tmp"
+  response-message: "Retrieving WireGuard status..."
+  response-headers:
+  - name: "Content-Type"
+    value: "application/json"
+  include-command-output-in-response: true
+  include-command-output-in-response-on-error: true
+  trigger-rule:
+    match:
+      type: "value"
+      value: "wg-status"
+      parameter:
+        source: "url"
+        name: "action"
+
+- id: "ip-info"
+  execute-command: "/usr/local/bin/ip-json.sh"
+  command-working-directory: "/tmp"
+  response-message: "Retrieving network interface information..."
+  response-headers:
+  - name: "Content-Type"
+    value: "application/json"
+  include-command-output-in-response: true
+  include-command-output-in-response-on-error: true
+  pass-arguments-to-command:
+  - source: "url"
+    name: "interface"
+  trigger-rule:
+    match:
+      type: "value"
+      value: "ip-info"
+      parameter:
+        source: "url"
+        name: "action"
+
+- id: "public-info"
+  execute-command: "/usr/local/bin/public-ipinfo.sh"
+  command-working-directory: "/tmp"
+  response-message: "Retrieving public IP information..."
+  response-headers:
+  - name: "Content-Type"
+    value: "application/json"
+  include-command-output-in-response: true
+  include-command-output-in-response-on-error: true
+  trigger-rule:
+    match:
+      type: "value"
+      value: "public-info"
+      parameter:
+        source: "url"
+        name: "action"
+
+- id: "show-peer-qr"
+  execute-command: "/usr/local/bin/show-peer.sh"
+  command-working-directory: "/tmp"
+  response-message: "Generating peer QR code..."
+  response-headers:
+  - name: "Content-Type"
+    value: "text/plain"
+  include-command-output-in-response: true
+  include-command-output-in-response-on-error: true
+  pass-arguments-to-command:
+  - source: "url"
+    name: "peer"
+  trigger-rule:
+    match:
+      type: "value"
+      value: "show-peer-qr"
+      parameter:
+        source: "url"
+        name: "action"

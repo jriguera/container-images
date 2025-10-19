@@ -1,0 +1,24 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+# Set default config directory if not provided
+CONFIGDIR="${CONFIGDIR:-/config}"
+
+# Enable ProxySocks by default in client mode
+[[ -z "$WG_PEERS" ]] && PROXY_ENABLED="${PROXY_ENABLED:-true}" || PROXY_ENABLED="${PROXY_ENABLED:-false}" 
+PROXY_ENABLED="${PROXY_ENABLED,,}"
+PROXY_PORT="${PROXY_PORT:-1080}"
+
+if [[ ${PROXY_ENABLED} == "false" ]]
+then
+    echo "* Disabling ProxySocks"
+    s6-notifyoncheck -d -n 300 -w 60000 -c "true" "sleep infinity"
+else
+    cmd="nc -z 127.0.0.1 ${PROXY_PORT}"
+    if [[ -z ${LSIO_NON_ROOT_USER} ]]
+    then
+        exec s6-notifyoncheck -d -n 300 -w 60000 -c "${cmd}" s6-setuidgid abc /usr/bin/socks5
+    else
+        exec s6-notifyoncheck -d -n 300 -w 60000 -c "${cmd}" /usr/bin/socks5
+    fi
+fi

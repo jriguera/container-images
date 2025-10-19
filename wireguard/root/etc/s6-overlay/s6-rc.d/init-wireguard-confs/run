@@ -1,0 +1,228 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+# shellcheck disable=SC2016,SC1091,SC2183
+
+# Set default config directory if not provided
+CONFIGDIR="${CONFIGDIR:-/config}"
+CONFIGDIR_SERVER="${CONFIGDIR_SERVER:-$CONFIGDIR/server}"
+CONFIGDIR_TEMPLATES="${CONFIGDIR_TEMPLATES:-$CONFIGDIR/templates}"
+CONFIGDIR_WGCONFS="${CONFIGDIR_WGCONFS:-$CONFIGDIR/wg_confs}"
+
+# WireGuard configuration parameters and defaults
+# Network configuration
+export WG_SERVER_PORT="${WG_SERVER_PORT:-51820}"               # WireGuard server port (external)
+export WG_SERVER_ADDR="${WG_SERVER_ADDR:-}"                    # External server address (default: auto-detect public IP)
+export WG_INTERNAL_SUBNET="${WG_INTERNAL_SUBNET:-10.13.13.0}"  # VPN internal subnet (first 3 octets)
+export WG_ALLOWEDIPS="${WG_ALLOWEDIPS:-0.0.0.0/0, ::/0}"       # Traffic routing for peers (default: all traffic)
+export WG_PEERS_DNS="${WG_PEERS_DNS:-}"                        # DNS servers for peers (default: "auto" = internal VPN gateway .1 address)
+export WG_SHOW_QR="${WG_SHOW_QR:-true}"                        # Display QR codes in logs (default: "true", set to "false" to save only to files)
+
+# Server mode configuration (required)
+# WG_PEERS: Number of peers OR comma-separated peer names (e.g., "3" or "laptop,phone,tablet")
+
+# Per-peer configuration (optional)
+# WG_SERVER_ALLOWEDIPS_PEER_<name>: Custom AllowedIPs for specific peer (e.g., WG_SERVER_ALLOWEDIPS_PEER_laptop="192.168.1.0/24")
+# WG_PEERS_PERSISTENTKEEPALIVE: Peers requiring keepalive, comma-separated or "all" (e.g., "laptop,phone" or "all")
+
+# If the environment variable WG_PEERS is set to a number or a list of strings separated by comma,
+# the container will run in server mode and the necessary server and peer/client confs will be generated.
+# The peer/client config qr codes will be output in the docker log if WG_SHOW_QR is set to true.
+# They will also be saved in text and png format under /config/peerX in case WG_PEERS is a variable
+# and an integer or /config/peer_X in case a list of names was provided instead of an integer.
+
+# Variables WG_SERVER_ADDR, WG_SERVER_PORT, WG_INTERNAL_SUBNET, WG_PEERS_DNS, SUBNET_PREFIX, WG_ALLOWEDIPS and
+# WG_PEERS_PERSISTENTKEEPALIVE are optional variables used for server mode.
+# Any changes to these environment variables will trigger regeneration of server and peer confs.
+# Peer/client confs will be recreated with existing private/public keys. Delete the peer folders
+# for the keys to be recreated along with the confs
+
+generate_confs () {
+    local prev_subnet_prefix="${1:-}"
+    local peer peer_id client_ip proposed_ip idx server_allowedips
+    
+    mkdir -p ${CONFIGDIR_SERVER}
+    if [[ ! -f ${CONFIGDIR_SERVER}/privatekey-server ]]
+    then
+        (
+            umask 077
+            wg genkey | tee ${CONFIGDIR_SERVER}/privatekey-server | wg pubkey > ${CONFIGDIR_SERVER}/publickey-server
+        )
+    fi
+    # Expand variables + preserve formatting (like mosquitto example)
+    eval "echo \"$(cat ${CONFIGDIR_TEMPLATES}/server.conf)\"" > ${CONFIGDIR_WGCONFS}/wg0.conf
+    for peer in "${WG_PEERS_ARRAY[@]}"
+    do
+        if [[ ! "${peer}" =~ ^[[:alnum:]]+$ ]]
+        then
+            echo "* Peer ${peer} contains non-alphanumeric characters and thus will be skipped. No config for peer ${peer} will be generated."
+        else
+            [[ "${peer}" =~ ^[0-9]+$ ]] && peer_id="peer${peer}" || peer_id="peer_${peer}"
+            mkdir -p "${CONFIGDIR}/${peer_id}"
+            if [[ ! -f "${CONFIGDIR}/${peer_id}/privatekey-${peer_id}" ]]
+            then
+                (
+                    umask 077
+                    wg genkey | tee "${CONFIGDIR}/${peer_id}/privatekey-${peer_id}" | wg pubkey > "${CONFIGDIR}/${peer_id}/publickey-${peer_id}"
+                    wg genpsk > "${CONFIGDIR}/${peer_id}/presharedkey-${peer_id}"
+                )
+            fi
+            if [[ -f "${CONFIGDIR}/${peer_id}/${peer_id}.conf" ]]
+            then
+                client_ip=$(grep "Address" "${CONFIGDIR}/${peer_id}/${peer_id}.conf" | awk '{print $NF}')
+                [[ -n "${prev_subnet_prefix}" ]] && [[ "${SUBNET_PREFIX}" != "${prev_subnet_prefix}" ]] && client_ip="${client_ip//${prev_subnet_prefix}/${SUBNET_PREFIX}}"
+            else
+                for idx in {2..254}
+                do
+                    proposed_ip="${SUBNET_PREFIX}.${idx}"
+                    if ! grep -q -R "${proposed_ip}" "${CONFIGDIR}/peer"/*/*.conf 2>/dev/null && \
+                        ([[ -z "${prev_subnet_prefix}" ]] || ! grep -q -R "${prev_subnet_prefix}.${idx}" "${CONFIGDIR}/peer"/*/*.conf 2>/dev/null)
+                    then
+                        client_ip="${proposed_ip}"
+                        break
+                    fi
+                done
+            fi
+            if [[ -f "${CONFIGDIR}/${peer_id}/presharedkey-${peer_id}" ]]
+            then
+                # create peer conf with presharedkey
+                eval "echo \"$(cat ${CONFIGDIR_TEMPLATES}/peer.conf)\"" > "${CONFIGDIR}/${peer_id}/${peer_id}.conf"
+                # add peer info to server conf with presharedkey
+                printf "[Peer]\n# %s\nPublicKey = %s\nPresharedKey = %s\n" \
+                    "${peer_id}" \
+                    "$(cat "${CONFIGDIR}/${peer_id}/publickey-${peer_id}")" \
+                    "$(cat "${CONFIGDIR}/${peer_id}/presharedkey-${peer_id}")" \
+                >> ${CONFIGDIR_WGCONFS}/wg0.conf
+            else
+                echo "* Existing keys with no preshared key found for ${peer_id}, creating confs without preshared key for backwards compatibility"
+                # create peer conf without presharedkey
+                eval "echo \"$(sed '/PresharedKey/d' ${CONFIGDIR_TEMPLATES}/peer.conf)\"" > "${CONFIGDIR}/${peer_id}/${peer_id}.conf"
+                # add peer info to server conf without presharedkey
+                printf "[Peer]\n# %s\nPublicKey = %s\n" \
+                    "${peer_id}" \
+                    "$(cat "${CONFIGDIR}/${peer_id}/publickey-${peer_id}")" \
+                >> ${CONFIGDIR_WGCONFS}/wg0.conf
+            fi
+            server_allowedips=WG_SERVER_ALLOWEDIPS_PEER_${peer}
+            # add peer's allowedips to server conf
+            if [[ -n "${!server_allowedips}" ]]
+            then
+                echo "* Adding ${!server_allowedips} to wg0.conf's AllowedIPs for peer ${peer}"
+                printf "AllowedIPs = %s/32,%s\n" "${client_ip}" "${!server_allowedips}" >> ${CONFIGDIR_WGCONFS}/wg0.conf
+            else
+                printf "AllowedIPs = %s/32\n" "${client_ip}" >> ${CONFIGDIR_WGCONFS}/wg0.conf
+            fi
+            # add PersistentKeepalive if the peer is specified
+            if [[ -n "${WG_PEERS_PERSISTENTKEEPALIVE_ARRAY}" ]] && \
+                ([[ "${WG_PEERS_PERSISTENTKEEPALIVE_ARRAY[0]}" = "all" ]] || printf '%s\0' "${WG_PEERS_PERSISTENTKEEPALIVE_ARRAY[@]}" | grep -Fxqz -- "${peer}")
+            then
+                printf "PersistentKeepalive = 25\n\n" >> ${CONFIGDIR_WGCONFS}/wg0.conf
+            else
+                printf "\n" >> ${CONFIGDIR_WGCONFS}/wg0.conf
+            fi
+            [[ "${WG_SHOW_QR}" = "true" ]] && qrencode -t ansiutf8 < "${CONFIGDIR}/${peer_id}/${peer_id}.conf"
+            qrencode -o "${CONFIGDIR}/${peer_id}/${peer_id}.png" < "${CONFIGDIR}/${peer_id}/${peer_id}.conf"
+            echo "* PEER ${peer} conf and QR code png saved in ${CONFIGDIR}/${peer_id}"
+        fi
+    done
+}
+
+save_vars () {
+    cat <<EOF > ${1}
+# Do not edit this file
+PREV_WG_SERVER_ADDR="$WG_SERVER_ADDR"
+PREV_WG_SERVER_PORT="$WG_SERVER_PORT"
+PREV_WG_PEERS_DNS="$WG_PEERS_DNS"
+PREV_WG_PEERS="$WG_PEERS"
+PREV_SUBNET_PREFIX="$SUBNET_PREFIX"
+PREV_WG_ALLOWEDIPS="$WG_ALLOWEDIPS"
+PREV_WG_PEERS_PERSISTENTKEEPALIVE="$WG_PEERS_PERSISTENTKEEPALIVE"
+EOF
+}
+
+check_and_regenerate_confs () {
+    local stored_vars_file="${CONFIGDIR}/.previous.parameters"
+
+    if [[ ! -f ${CONFIGDIR_WGCONFS}/wg0.conf ]]
+    then
+        echo "* No wg0.conf found (maybe an initial install), generating server and ${WG_PEERS} peer/client configurations"
+        generate_confs
+        save_vars "${stored_vars_file}"
+    else
+        echo "* Server mode is selected and existing configs found, checking if any server related environment variable changed ..."
+        # Load previous configuration state
+        [[ -f ${stored_vars_file} ]] && source ${stored_vars_file}
+        # Check if any configuration parameter has changed
+        if [[ "$WG_SERVER_ADDR" != "$PREV_WG_SERVER_ADDR" ]] || \
+            [[ "$WG_SERVER_PORT" != "$PREV_WG_SERVER_PORT" ]] || \
+            [[ "$WG_PEERS_DNS" != "$PREV_WG_PEERS_DNS" ]] || \
+            [[ "$WG_PEERS" != "$PREV_WG_PEERS" ]] || \
+            [[ "$SUBNET_PREFIX" != "$PREV_SUBNET_PREFIX" ]] || \
+            [[ "$WG_ALLOWEDIPS" != "$PREV_WG_ALLOWEDIPS" ]] || \
+            [[ "$WG_PEERS_PERSISTENTKEEPALIVE" != "$PREV_WG_PEERS_PERSISTENTKEEPALIVE" ]]
+        then
+            echo "* Server related environment variables changed, regenerating server and ${WG_PEERS} peer/client configurations"
+            generate_confs "${PREV_SUBNET_PREFIX}"
+            save_vars "${stored_vars_file}"
+        else
+            echo "* No changes to parameters. Existing configurations are used."
+        fi
+    fi
+}
+
+# Main logic starts here
+mkdir -p "${CONFIGDIR_WGCONFS}" "${CONFIGDIR_TEMPLATES}"
+
+# prepare templates, so user can modify them if needed
+[[ ! -f $CONFIGDIR_TEMPLATES/server.conf ]] && cp /defaults/server.conf $CONFIGDIR_TEMPLATES/server.conf
+[[ ! -f $CONFIGDIR_TEMPLATES/peer.conf ]] && cp /defaults/peer.conf $CONFIGDIR_TEMPLATES/peer.conf
+
+# Load env file if it exists
+if [[ -f "${CONFIGDIR}/env" ]]
+then
+    # shellcheck source=/dev/null
+    source "${CONFIGDIR}/env"
+fi
+
+if [[ -n "$WG_PEERS" ]]
+then
+    echo "* Server mode selected."
+    if [[ "$WG_PEERS" =~ ^[0-9]+$ ]] && ! [[ "$WG_PEERS" = *,* ]]
+    then
+        mapfile -t WG_PEERS_ARRAY < <(seq 1 "${WG_PEERS}")
+    else
+        mapfile -t WG_PEERS_ARRAY < <(echo "${WG_PEERS}" | tr ',' '\n')
+    fi
+    if [[ -n "${WG_PEERS_PERSISTENTKEEPALIVE}" ]]
+    then
+        echo "* PersistentKeepalive will be set for: ${WG_PEERS_PERSISTENTKEEPALIVE/,/ }"
+        mapfile -t WG_PEERS_PERSISTENTKEEPALIVE_ARRAY < <(echo "${WG_PEERS_PERSISTENTKEEPALIVE}" | tr ',' '\n')
+    fi
+    if [[ -z "$WG_SERVER_ADDR" ]]
+    then
+        echo "* WG_SERVER_ADDR var is not set setting external IP to auto detected value"
+        WG_SERVER_ADDR=$(curl -s icanhazip.com)
+    fi
+    echo "* External server address is set to $WG_SERVER_ADDR"
+    echo "* External server port is set to ${WG_SERVER_PORT}. Make sure that port is properly forwarded to port 51820 inside this container *"
+    echo "* Internal subnet is set to $WG_INTERNAL_SUBNET"
+    echo "* Setting allowedIPs for peers $WG_ALLOWEDIPS"
+    SUBNET_PREFIX=$(echo "$WG_INTERNAL_SUBNET" | awk 'BEGIN{FS=OFS="."} NF--')
+    if [[ -z "$WG_PEERS_DNS" ]]
+    then
+        echo "* WG_PEERS_DNS var is not set, setting peer DNS to ${SUBNET_PREFIX}.1 to use wireguard docker host's DNS."
+        WG_PEERS_DNS="${SUBNET_PREFIX}.1"
+    fi
+    echo "* Peer DNS servers will be set to $WG_PEERS_DNS"
+
+    # set lowercase
+    WG_SHOW_QR="${WG_SHOW_QR,,}"
+
+    # Generate or regenerate configurations if needed
+    check_and_regenerate_confs
+fi
+
+
+if [[ -z ${LSIO_NON_ROOT_USER} ]]
+then
+    lsiown -R abc:abc "${CONFIGDIR_SERVER}" "${CONFIGDIR_TEMPLATES}" "${CONFIGDIR_WGCONFS}"
+fi
