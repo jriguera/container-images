@@ -50,7 +50,7 @@ RUN chmod a+x /healthcheck.sh && \
 # Download and install filebrowser binary
 RUN \
   echo "**** downloading filebrowser ****" && \
-  FB_VERSION=${FILEBROWSER_VERSION:-$(curl -s https://api.github.com/repos/filebrowser/filebrowser/releases/latest | jq -r '.tag_name')} && \
+  FB_VERSION=${FILEBROWSER_VERSION:-$(curl -s "https://api.github.com/repos/filebrowser/filebrowser/releases/latest" | jq -r '.tag_name')} && \
   curl -s -L "https://github.com/filebrowser/filebrowser/releases/download/${FB_VERSION}/linux-amd64-filebrowser.tar.gz" -o /tmp/filebrowser.tar.gz && \
   mkdir /tmp/filebrowser && tar -xzf /tmp/filebrowser.tar.gz -C /tmp/filebrowser && \
   mv /tmp/filebrowser/filebrowser /bin/filebrowser && chmod +x /bin/filebrowser && \
