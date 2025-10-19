@@ -66,7 +66,7 @@ RUN echo "wireguard" >> /etc/modules && \
   rm -rf /etc/wireguard && ln -s /config/wg_confs /etc/wireguard
 
 # add socks5 proxy
-COPY --from=socks5proxy /usr/bin/socks5 /usr/bin/socks5
+COPY --from=socks5proxy /socks5 /usr/bin/socks5
 
 # Download and install webhook binary
 RUN \
@@ -74,7 +74,7 @@ RUN \
   WEBHOOK_VERSION=${WEBHOOK_VERSION:-$(curl -s "https://api.github.com/repos/adnanh/webhook/releases/latest" | jq -r '.tag_name')} && \
   curl -s -L "https://github.com/adnanh/webhook/releases/download/${WEBHOOK_VERSION}/webhook-linux-amd64.tar.gz" -o /tmp/webhook.tar.gz && \
   mkdir /tmp/webhook && tar -xzf /tmp/webhook.tar.gz -C /tmp/webhook --strip-components=1 && \
-  mv /tmp/webhook/webhook /bin/webhook && chmod +x /usr/bin/webhook && \
+  mv /tmp/webhook/webhook /usr/bin/webhook && chmod +x /usr/bin/webhook && \
   rm -rf /tmp/webhook.tar.gz /tmp/webhook
 
 # Define healthcheck script
