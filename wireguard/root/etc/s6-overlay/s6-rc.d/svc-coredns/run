@@ -20,5 +20,7 @@ then
 else
     cmd="nc -zu 127.0.0.1 ${COREDNS_PORT}"
     grep -q "health" ${CONFIGDIR}/coredns/Corefile && cmd="redirfd -w 1 /dev/null curl -s http://127.0.0.1:8080/health"
+
+    echo "* Starting CoreDNS ..."
     exec s6-notifyoncheck -d -n 300 -w 60000 -c "${cmd}" cd ${CONFIGDIR}/coredns /usr/bin/coredns -dns.port=${COREDNS_PORT}
 fi

@@ -16,6 +16,7 @@ then
     s6-notifyoncheck -d -n 300 -w 60000 -c "true" "sleep infinity"
 else
     cmd="nc -z 127.0.0.1 ${PROXY_PORT}"
+    echo "* Starting ProxySocks ..."
     if [[ -z ${LSIO_NON_ROOT_USER} ]]
     then
         exec s6-notifyoncheck -d -n 300 -w 60000 -c "${cmd}" s6-setuidgid abc /usr/bin/socks5
