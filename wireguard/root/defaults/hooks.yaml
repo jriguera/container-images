@@ -11,13 +11,6 @@
     value: "application/json"
   include-command-output-in-response: true
   include-command-output-in-response-on-error: true
-  trigger-rule:
-    match:
-      type: "value"
-      value: "wg-status"
-      parameter:
-        source: "url"
-        name: "action"
 
 - id: "ip-info"
   execute-command: "/usr/local/bin/ip-json.sh"
@@ -31,13 +24,6 @@
   pass-arguments-to-command:
   - source: "url"
     name: "interface"
-  trigger-rule:
-    match:
-      type: "value"
-      value: "ip-info"
-      parameter:
-        source: "url"
-        name: "action"
 
 - id: "public-info"
   execute-command: "/usr/local/bin/public-ipinfo.sh"
@@ -48,13 +34,6 @@
     value: "application/json"
   include-command-output-in-response: true
   include-command-output-in-response-on-error: true
-  trigger-rule:
-    match:
-      type: "value"
-      value: "public-info"
-      parameter:
-        source: "url"
-        name: "action"
 
 - id: "show-peer-qr"
   execute-command: "/usr/local/bin/show-peer.sh"
@@ -68,10 +47,3 @@
   pass-arguments-to-command:
   - source: "url"
     name: "peer"
-  trigger-rule:
-    match:
-      type: "value"
-      value: "show-peer-qr"
-      parameter:
-        source: "url"
-        name: "action"
