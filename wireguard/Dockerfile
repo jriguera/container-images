@@ -57,13 +57,15 @@ RUN chmod a+x /healthcheck.sh && \
     jq \
     wireguard-tools~${WIREGUARD_VERSION} \
     && \
+    echo "**** setting permissions on /usr/local/bin ****" && \
+    chmod +x /usr/local/bin/*.sh && \
+    echo "**** setting up wireguard config symlink ****" && \
+    echo "wireguard" >> /etc/modules && \
+    sed -i 's|\[\[ $proto == -4 \]\] && cmd sysctl -q net\.ipv4\.conf\.all\.src_valid_mark=1|[[ $proto == -4 ]] \&\& [[ $(sysctl -n net.ipv4.conf.all.src_valid_mark) != 1 ]] \&\& cmd sysctl -q net.ipv4.conf.all.src_valid_mark=1|' /usr/bin/wg-quick && \
+    rm -rf /etc/wireguard && ln -s /config/wg_confs /etc/wireguard
     printf "Linuxserver.io version: ${VERSION}\nBuild-date: ${BUILD_DATE}" > /build_version && \
     echo "**** cleanup ****" && \
     rm -rf /tmp/* $HOME/.cache
-
-RUN echo "wireguard" >> /etc/modules && \
-  sed -i 's|\[\[ $proto == -4 \]\] && cmd sysctl -q net\.ipv4\.conf\.all\.src_valid_mark=1|[[ $proto == -4 ]] \&\& [[ $(sysctl -n net.ipv4.conf.all.src_valid_mark) != 1 ]] \&\& cmd sysctl -q net.ipv4.conf.all.src_valid_mark=1|' /usr/bin/wg-quick && \
-  rm -rf /etc/wireguard && ln -s /config/wg_confs /etc/wireguard
 
 # add socks5 proxy
 COPY --from=socks5proxy /socks5 /usr/bin/socks5
