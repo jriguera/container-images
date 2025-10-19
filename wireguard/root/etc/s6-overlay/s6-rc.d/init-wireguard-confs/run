@@ -2,8 +2,6 @@
 # shellcheck shell=bash
 # shellcheck disable=SC2016,SC1091,SC2183
 
-set -x
-
 # Set default config directory if not provided
 CONFIGDIR="${CONFIGDIR:-/config}"
 CONFIGDIR_SERVER="${CONFIGDIR_SERVER:-$CONFIGDIR/server}"
