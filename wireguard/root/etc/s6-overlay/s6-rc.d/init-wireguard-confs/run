@@ -225,4 +225,8 @@ if [[ -z ${LSIO_NON_ROOT_USER} ]]
 then
     lsiown -R abc:abc "${CONFIGDIR_TEMPLATES}" "${CONFIGDIR_WGCONFS}"
     [[ -d ${CONFIGDIR_SERVER} ]] && lsiown -R abc:abc "${CONFIGDIR_SERVER}" || true
+    for conf in "${CONFIGDIR_WGCONFS}"/*.conf
+    do
+        chmod 600 "$conf"
+    done
 fi
