@@ -1,0 +1,473 @@
+diff --git a/package.json b/package.json
+index 28b86649..c3fd7efd 100644
+--- a/package.json
++++ b/package.json
+@@ -40,7 +40,9 @@
+     "tough-cookie": "^6.0.0",
+     "urbackup-server-api": "^0.8.9",
+     "winston": "^3.17.0",
+-    "xml-js": "^1.6.11"
++    "xml-js": "^1.6.11",
++    "amule-js": "^1.0.0",
++    "blueimp-md5": "^2.19.0"
+   },
+   "devDependencies": {
+     "@tailwindcss/forms": "^0.5.10",
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index 113bacff..ca07a379 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -14,6 +14,12 @@ importers:
+       '@kubernetes/client-node':
+         specifier: ^1.0.0
+         version: 1.0.0
++      amule-js:
++        specifier: ^1.0.0
++        version: 1.0.0
++      blueimp-md5:
++        specifier: ^2.19.0
++        version: 2.19.0
+       classnames:
+         specifier: ^2.5.1
+         version: 2.5.1
+@@ -920,6 +926,9 @@ packages:
+   ajv@6.12.6:
+     resolution: {integrity: sha512-j3fVLgvTo527anyYyJOGTYJbG+vnnQYvE0m5mmkc1TK+nxAppkCLMIL0aZ4dblVCNoGShhm+kzE4ZUykBoMg4g==}
+ 
++  amule-js@1.0.0:
++    resolution: {integrity: sha512-6k0cFV2WVQTI8+SnQYkmlfC3Ygtoxo1Vlpd53vGxgF32/JMfwdeYuIBAM1HjV+yRVkFaHiqBG7Vxpax4AgR3yg==}
++
+   ansi-regex@5.0.1:
+     resolution: {integrity: sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==}
+     engines: {node: '>=8'}
+@@ -1028,6 +1037,9 @@ packages:
+   bl@4.1.0:
+     resolution: {integrity: sha512-1W07cM9gS6DcLperZfFSj+bWLtaPGSOHWhPiGzXmvVJbRLdG82sH/Kn8EtW1VqWVA54AKf2h5k5BbnIbwF3h6w==}
+ 
++  blueimp-md5@2.19.0:
++    resolution: {integrity: sha512-DRQrD6gJyy8FbiE4s+bDoXS9hiW3Vbx5uCdwvcCf3zLHL+Iv7LtGHLpr+GZV8rHG8tK766FGYBwRbu8pELTt+w==}
++
+   brace-expansion@1.1.12:
+     resolution: {integrity: sha512-9T9UjW3r0UW5c1Q7GTwllptXwhvYmEzFhzMfZ9H7FQWt+uZePjZPjBP/W1ZEyZ1twGWom5/56TF4lPcqjnDHcg==}
+ 
+@@ -3736,6 +3748,10 @@ snapshots:
+       json-schema-traverse: 0.4.1
+       uri-js: 4.4.1
+ 
++  amule-js@1.0.0:
++    dependencies:
++      blueimp-md5: 2.19.0
++
+   ansi-regex@5.0.1: {}
+ 
+   ansi-regex@6.1.0: {}
+@@ -3870,6 +3886,8 @@ snapshots:
+       inherits: 2.0.4
+       readable-stream: 3.6.2
+ 
++  blueimp-md5@2.19.0: {}
++
+   brace-expansion@1.1.12:
+     dependencies:
+       balanced-match: 1.0.2
+diff --git a/public/locales/en/common.json b/public/locales/en/common.json
+index 49d1325d..89b40c9f 100644
+--- a/public/locales/en/common.json
++++ b/public/locales/en/common.json
+@@ -97,6 +97,12 @@
+         "up": "Up",
+         "not_available": "Not Available"
+     },
++    "amule": {
++        "download": "Download",
++        "upload": "Upload",
++        "downloading": "Downloading",
++        "queue": "Queue"
++    },
+     "emby": {
+         "playing": "Playing",
+         "transcoding": "Transcoding",
+diff --git a/src/widgets/amule/README.md b/src/widgets/amule/README.md
+new file mode 100644
+index 00000000..ecc28d75
+--- /dev/null
++++ b/src/widgets/amule/README.md
+@@ -0,0 +1,186 @@
++# aMule Widget
++
++## aMule Widget Summary
++
++The widget follows the standard homepage-dashboard pattern:
++
++```
++src/widgets/amule/
++├── component.jsx    # React component (UI)
++├── widget.js        # Widget configuration
++└── proxy.js         # API proxy handler
++```
++
++This widget integrates with aMule, a multi-platformThe widget uses the `amule-js` library which implements aMule's External Connections (EC) protocol. It:
++
++1. Establishes a TCP connection to aMule's EC port (default 4712)
++2. Parses the `server` parameter (format: `hostname:port` or `ip:port`)
++3. Authenticates using MD5-hashed password
++4. Fetches statistics using EC protocol commands:
++   - `getStatistiques()` - Gets download/upload speeds
++   - `getDetailUpdate()` - Gets detailed file list and statuske client, using the [amule-js](https://github.com/tbo47/amule-js) library to communicate directly with aMule's External Connections (EC) protocol.
++
++## Configuration
++
++Add the following configuration to your `services.yaml`:
++
++```yaml
++- aMule:
++    icon: a-mule.png
++    href: http://localhost:4711
++    description: aMule P2P Client
++    widget:
++      type: amule
++      server: localhost:4712
++      password: your-ec-password
++```
++
++**Important:**
++- The `server` should be in the format `hostname:port` or `ip:port` (default port: 4712)
++- The `href` points to the web interface (port 4711) for clicking through
++- The `password` is the EC password, not the web interface password
++- Port can be omitted if using default: `server: localhost` (assumes 4712)
++
++### 1. Install npm Dependencies (only if needed)
++
++From the homepage project root:
++
++```bash
++npm install amule-js blueimp-md5
++```
++
++Or if using pnpm:
++
++```bash
++pnpm add amule-js blueimp-md5
++```
++
++### 2. Configure aMule
++
++1. Open aMule
++2. Go to **Preferences** → **Remote Controls**
++3. Check **"Accept External Connections"**
++4. Set **Port**: `4712` (default)
++5. Set **Password**: Choose a secure password (this will be your EC password)
++6. Click **OK** and restart aMule
++
++### 3. Configure Homepage
++
++Edit your `services.yaml`:
++
++```yaml
++- aMule:
++    icon: a-mule.png
++    href: http://localhost:4711
++    description: aMule P2P Download Manager
++    widget:
++      type: amule
++      server: localhost:4712
++      password: your-ec-password
++```
++
++## Widget Fields
++
++The widget displays the following information:
++
++- **Download**: Current download speed (in bits/sec)
++- **Upload**: Current upload speed (in bits/sec)
++- **Downloading**: Number of files currently being downloaded
++- **Queue**: Number of files queued
++
++## Prerequisites
++
++### 1. Install Required npm Packages
++
++You need to install the `amule-js` library and its dependency:
++
++```bash
++npm install amule-js blueimp-md5
++```
++
++Or with pnpm:
++
++```bash
++pnpm add amule-js blueimp-md5
++```
++
++### 2. Enable aMule External Connections
++
++1. Open aMule preferences
++2. Go to "Remote Controls" section
++3. Enable "Accept External Connections"
++4. Set the port (default is 4712)
++5. Set the EC password (this is what you'll use in the widget configuration)
++6. Apply and restart aMule
++
++### 3. Network Access
++
++Make sure your Homepage instance can reach aMule's EC port:
++- If running in Docker, ensure proper network configuration
++- Check firewall rules if running on a different machine
++
++## API Integration
++
++This widget uses the `amule-js` library which implements aMule's External Connections (EC) protocol. It:
++
++1. Establishes a TCP connection to aMule's EC port (default 4712)
++2. Authenticates using MD5-hashed password
++3. Fetches statistics using EC protocol commands:
++   - `getStatistiques()` - Gets download/upload speeds
++   - `getDetailUpdate()` - Gets detailed file list and status
++
++The connection is cached and reused across requests for better performance.
++
++## Technical Details
++
++### Server Format
++
++The `server` parameter accepts:
++- Full format: `hostname:port` or `ip:port` (e.g., `192.168.1.100:4712`)
++- Short format: `hostname` or `ip` (assumes default port 4712)
++
++### Data Extraction
++
++- **Download/Upload Speeds**: Retrieved from `EC_TAG_STATS_DL_SPEED` (513) and `EC_TAG_STATS_UL_SPEED` (512) via `getStatistiques()`
++- **File Counts**: Calculated from the download queue using `getDownloads()`:
++  - **Downloading**: Files with `partfile_speed > 0` (actively transferring)
++  - **Queue**: Files with `partfile_speed === 0` (paused or waiting)
++
++### Error Handling
++
++- Missing password returns a 400 error
++- Connection failures remove the client from cache and return 500 error
++- All errors are logged for debugging
++
++## Troubleshooting
++
++### "Failed to connect to aMule"
++- Verify aMule is running and EC is enabled
++- Check the port number (should be 4712 by default)
++- Verify the password matches your EC password in aMule
++- Check network connectivity and firewall rules
++
++### "aMule password is required"
++- Make sure you've added the `password` field to your widget configuration
++
++### Incorrect File Counts
++- The widget uses `partfile_speed` to determine if a file is actively downloading
++- Files with speed > 0 are counted as "downloading"
++- Files with speed = 0 are counted as "queue" (paused/waiting)
++- If counts seem wrong, check if files are actually transferring data in aMule
++
++## aMule Integration Details
++
++The widget uses the **amule-js** library (https://github.com/tbo47/amule-js) which:
++
++- Connects directly to aMule's External Connections (EC) protocol via TCP
++- Default EC port: 4712 (not the web interface port 4711)
++- Authentication: MD5-hashed password
++- Protocol: Custom binary protocol (not HTTP/REST)
++
++## Related Resources
++
++- [aMule Official Site](http://www.amule.org/)
++- [amule-js GitHub](https://github.com/tbo47/amule-js)
++- [Homepage Dashboard](https://gethomepage.dev/)
++- [aMule EC Protocol](http://wiki.amule.org/wiki/External_Connections)
+diff --git a/src/widgets/amule/component.jsx b/src/widgets/amule/component.jsx
+new file mode 100644
+index 00000000..c08e9d66
+--- /dev/null
++++ b/src/widgets/amule/component.jsx
+@@ -0,0 +1,36 @@
++import Block from "components/services/widget/block";
++import Container from "components/services/widget/container";
++import { useTranslation } from "next-i18next";
++
++import useWidgetAPI from "utils/proxy/use-widget-api";
++
++export default function Component({ service }) {
++  const { t } = useTranslation();
++  const { widget } = service;
++
++  const { data: statsData, error: statsError } = useWidgetAPI(widget);
++
++  if (statsError) {
++    return <Container service={service} error={statsError} />;
++  }
++
++  if (!statsData) {
++    return (
++      <Container service={service}>
++        <Block label="amule.download" />
++        <Block label="amule.upload" />
++        <Block label="amule.downloading" />
++        <Block label="amule.queue" />
++      </Container>
++    );
++  }
++
++  return (
++    <Container service={service}>
++      <Block label="amule.download" value={t("common.bitrate", { value: statsData.download_speed })} />
++      <Block label="amule.upload" value={t("common.bitrate", { value: statsData.upload_speed })} />
++      <Block label="amule.downloading" value={t("common.number", { value: statsData.downloading })} />
++      <Block label="amule.queue" value={t("common.number", { value: statsData.queue })} />
++    </Container>
++  );
++}
+diff --git a/src/widgets/amule/proxy.js b/src/widgets/amule/proxy.js
+new file mode 100644
+index 00000000..bd26bc0d
+--- /dev/null
++++ b/src/widgets/amule/proxy.js
+@@ -0,0 +1,101 @@
++import getServiceWidget from "utils/config/service-helpers";
++import createLogger from "utils/logger";
++
++const logger = createLogger("amuleProxyHandler");
++
++// Helper to create and connect aMule client
++async function connectToAmule(widget) {
++  try {
++    // Use amule-ts.js which has proper CommonJS exports
++    const { AMuleCli } = require("amule-js/amule-ts.js");
++    const md5 = require("blueimp-md5");
++    const { StringDecoder } = require("string_decoder");
++
++    // Parse server to get host and port (format: "hostname:port" or "ip:port")
++    const serverParts = widget.server.split(":");
++    const host = serverParts[0];
++    const port = serverParts.length > 1 ? parseInt(serverParts[1], 10) : 4712; // Default aMule EC port is 4712
++
++    const aMule = new AMuleCli(host, port, widget.password, md5);
++
++    // Set up UTF-8 decoder to properly handle special characters in file names
++    aMule.setStringDecoder(new StringDecoder("utf8"));
++
++    // Connect to aMule
++    await aMule.connect();
++    return aMule;
++  } catch (error) {
++    logger.error("Failed to connect to aMule: %s", error);
++    throw error;
++  }
++}
++
++export default async function amuleProxyHandler(req, res) {
++  const { group, service, index } = req.query;
++
++  if (!group || !service) {
++    logger.debug("Invalid or missing service '%s' or group '%s'", service, group);
++    return res.status(400).json({ error: "Invalid proxy service type" });
++  }
++
++  const widget = await getServiceWidget(group, service, index);
++  if (!widget) {
++    logger.debug("Invalid or missing widget for service '%s' in group '%s'", service, group);
++    return res.status(400).json({ error: "Invalid proxy service type" });
++  }
++
++  if (!widget.server) {
++    logger.error("aMule server is required");
++    return res.status(400).json({ error: "aMule server is required in widget configuration (format: hostname:port)" });
++  }
++
++  if (!widget.password) {
++    logger.error("aMule password is required");
++    return res.status(400).json({ error: "aMule password is required in widget configuration" });
++  }
++
++  try {
++    const aMule = await connectToAmule(widget);
++    // Get statistics from aMule
++    const stats = await aMule.getStatistiques();
++
++    // Extract relevant data
++    // Based on amule-js EC_TAG_MAPPING:
++    // EC_TAG_STATS_DL_SPEED: 513
++    // EC_TAG_STATS_UL_SPEED: 512
++    const downloadSpeed = stats.stats_dl_speed || 0;
++    const uploadSpeed = stats.stats_ul_speed || 0;
++
++    // Get the list of downloading files
++    // getDownloads() returns an array of files being downloaded
++    const downloads = await aMule.getDownloads();
++
++    // Count actively downloading files (those with download speed > 0)
++    // and queued files (those waiting or paused)
++    let downloading = 0;
++    let queue = 0;
++    if (downloads && Array.isArray(downloads)) {
++      downloads.forEach((file) => {
++        // Files with partfile_speed > 0 are actively downloading
++        // Others are queued/paused
++        if (file.partfile_speed && file.partfile_speed > 0) {
++          downloading++;
++        } else {
++          queue++;
++        }
++      });
++    }
++
++    const response = {
++      download_speed: downloadSpeed,
++      upload_speed: uploadSpeed,
++      downloading,
++      queue,
++    };
++
++    return res.status(200).json(response);
++  } catch (error) {
++    logger.error("Error getting aMule data: %s", error);
++    return res.status(500).json({ error: `Failed to get aMule data: ${error.message}` });
++  }
++}
+diff --git a/src/widgets/amule/widget.js b/src/widgets/amule/widget.js
+new file mode 100644
+index 00000000..3884bec3
+--- /dev/null
++++ b/src/widgets/amule/widget.js
+@@ -0,0 +1,7 @@
++import amuleProxyHandler from "./proxy";
++
++const widget = {
++  proxyHandler: amuleProxyHandler,
++};
++
++export default widget;
+diff --git a/src/widgets/components.js b/src/widgets/components.js
+index 4b8d4e71..5723c162 100644
+--- a/src/widgets/components.js
++++ b/src/widgets/components.js
+@@ -2,6 +2,7 @@ import dynamic from "next/dynamic";
+ 
+ const components = {
+   adguard: dynamic(() => import("./adguard/component")),
++  amule: dynamic(() => import("./amule/component")),
+   apcups: dynamic(() => import("./apcups/component")),
+   argocd: dynamic(() => import("./argocd/component")),
+   atsumeru: dynamic(() => import("./atsumeru/component")),
+diff --git a/src/widgets/widgets.js b/src/widgets/widgets.js
+index bc9f137d..b9de7abf 100644
+--- a/src/widgets/widgets.js
++++ b/src/widgets/widgets.js
+@@ -1,4 +1,5 @@
+ import adguard from "./adguard/widget";
++import amule from "./amule/widget";
+ import apcups from "./apcups/widget";
+ import argocd from "./argocd/widget";
+ import atsumeru from "./atsumeru/widget";
+@@ -145,6 +146,7 @@ import zabbix from "./zabbix/widget";
+ 
+ const widgets = {
+   adguard,
++  amule,
+   apcups,
+   argocd,
+   atsumeru,

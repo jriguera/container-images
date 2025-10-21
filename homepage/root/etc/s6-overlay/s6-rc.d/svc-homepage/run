@@ -1,0 +1,12 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+cmd="/healthcheck.sh"
+
+echo "* Running homepage service..."
+if [[ -z ${LSIO_NON_ROOT_USER} ]]
+then
+    exec s6-notifyoncheck -d -n 300 -w 60000 -c "${cmd}" s6-setuidgid abc cd /app node server.js
+else
+    exec s6-notifyoncheck -d -n 300 -w 60000 -c "${cmd}" cd /app node server.js
+fi

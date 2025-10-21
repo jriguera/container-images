@@ -1,0 +1,19 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+CONFIGDIR=${CONFIGDIR:-/config}
+
+# make folders if required
+mkdir -p "${CONFIGDIR}" "${CONFIGDIR}/logs"
+
+# load env file if it exists
+if [[ -f "${CONFIGDIR}/env" ]]
+then
+    # shellcheck source=/dev/null
+    source "${CONFIGDIR}/env"
+fi
+
+if [[ -z ${LSIO_NON_ROOT_USER} ]]
+then
+    lsiown -R abc:abc "${CONFIGDIR}" /public
+fi

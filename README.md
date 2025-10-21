@@ -8,6 +8,7 @@ This repository contains Docker container images for various applications, all b
 |-----------|-------------|---------|
 | [amule](amule) | aMule eDonkey/Kademlia P2P client | [README](amule/README.md) |
 | [filebrowser](filebrowser) | Web-based file manager | [README](filebrowser/README.md) |
+| [homepage](homepage) | Homepage dashboard with custom aMule widget | [README](homepage/README.md) |
 | [mosquitto](mosquitto) | Eclipse Mosquitto MQTT broker | [README](mosquitto/README.md) |
 | [qbittorrent](qbittorrent) | qBittorrent BitTorrent client | [README](qbittorrent/README.md) |
 | [prowlarr](prowlarr) | Prowlarr indexer | [README](prowlarr/README.md) |
