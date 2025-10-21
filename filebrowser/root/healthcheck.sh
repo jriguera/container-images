@@ -15,7 +15,7 @@ fi
 # Extract port and address from settings.json, with defaults
 port=${FB_PORT:-$(jq -r .port "${CONFIGDIR}/settings.json")}
 address=${FB_ADDRESS:-$(jq -r .address "${CONFIGDIR}/settings.json")}
-address=${address:-localhost}
+address=${address:-127.0.0.1}
 
 if ! wget -q --spider http://$address:$port/health
 then
