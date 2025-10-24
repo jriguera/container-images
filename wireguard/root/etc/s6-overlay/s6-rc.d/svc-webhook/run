@@ -12,7 +12,7 @@ export WEBHOOK_HOTRELOAD="${WEBHOOK_HOTRELOAD:-true}"
 export WEBHOOK_ADDR="${WEBHOOK_ADDR:-0.0.0.0}"
 
 # Build webhook command arguments
-WEBHOOK_ARGS=( -hooks "${CONFIGDIR_WEBHOOK}/hooks.yaml" -ip "${WEBHOOK_ADDR}" -port "${WEBHOOK_PORT}" -urlprefix "''" )
+WEBHOOK_ARGS=( -hooks "${CONFIGDIR_WEBHOOK}/hooks.yaml" -ip "${WEBHOOK_ADDR}" -port "${WEBHOOK_PORT}" -urlprefix '''' )
 [[ "${WEBHOOK_VERBOSE}" == "true" ]] && WEBHOOK_ARGS+=(-verbose)
 [[ "${WEBHOOK_HOTRELOAD}" == "true" ]] && WEBHOOK_ARGS+=(-hotreload)
 
