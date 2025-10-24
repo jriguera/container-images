@@ -12,7 +12,9 @@ then
 fi
 
 # Check if the interface is UP using JSON output
-if ! ip -json link show "${INTERFACE}" 2>/dev/null | jq -e '.[0].operstate == "UP"' >/dev/null
+# WireGuard interfaces typically show operstate as "UNKNOWN" which is normal
+# So we check if the "UP" flag is present in the flags array instead
+if ! ip -json link show "${INTERFACE}" 2>/dev/null | jq -e '.[0].flags[] | select(. == "UP")' >/dev/null
 then
     echo "* HEALTHCHECK: Interface ${INTERFACE} is not UP" >&2
     exit 1
