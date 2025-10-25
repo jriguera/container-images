@@ -24,6 +24,11 @@ export AMULE_WEBSERVER_PORT="${AMULE_WEBSERVER_PORT:-${PORT:-4711}}"
 export AMULE_WEBSERVER_TEMPLATE="${AMULE_WEBSERVER_TEMPLATE:-bootstrap}"
 export AMULE_YOURHOSTNAME="${AMULE_YOURHOSTNAME:-}"
 
+# Directories inside DATADIR
+export AMULE_DATADIR_TEMP=${AMULE_DATADIR_TEMP:-temp}
+export AMULE_DATADIR_INCOMING=${AMULE_DATADIR_INCOMING:-incoming}
+
+
 if [[ -n "${AMULE_PASSWORD}" ]]
 then
     echo "* Computing MD5 hash for provided password..."
@@ -42,6 +47,9 @@ then
     eval "echo \"$(cat /defaults/amule.conf.template)\"" > "${CONFIGDIR}/amule.conf"
     eval "echo \"$(cat /defaults/remote.conf.template)\"" > "${CONFIGDIR}/remote.conf"
 fi
+
+# create required directories inside DATADIR
+mkdir -p "${DATADIR}/${AMULE_DATADIR_TEMP}" "${DATADIR}/${AMULE_DATADIR_INCOMING}"
 
 if [[ -z ${LSIO_NON_ROOT_USER} ]]
 then
