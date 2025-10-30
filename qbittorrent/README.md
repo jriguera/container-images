@@ -26,7 +26,7 @@ docker run --rm -ti --name qbittorrent \
   -p 6881:6881 \
   -p 6881:6881/udp \
   -p 8080:8080 \
-  -v $(pwd)/data:/data \
+  -v $(pwd)/data:/downloads \
   -v $(pwd)/config:/config \
   qbittorrent
 ```
@@ -44,7 +44,7 @@ services:
       - "6881:6881/udp"  # BitTorrent UDP  
       - "8080:8080"      # Web interface
     volumes:
-      - ./data:/data
+      - ./data:/downloads
       - ./config:/config
     environment:
       - QBT_WEBUI_PASSWORD=mysecretpassword
@@ -159,7 +159,7 @@ The following ports are used by qBittorrent:
 
 ## Volumes
 
-- `/data`: qBittorrent data directory (downloads, temp files, torrents)
+- `/downloads`: qBittorrent data directory (downloads, temp files, torrents)
 - `/config`: Configuration files and runtime data
 
 ## Examples
@@ -170,7 +170,7 @@ docker run -d --name qbittorrent \
   -p 6881:6881 \
   -p 6881:6881/udp \
   -p 8080:8080 \
-  -v ./qbt-data:/data \
+  -v ./qbt-data:/downloads \
   -v ./qbt-config:/config \
   -e QBT_WEBUI_PASSWORD=mypassword \
   qbittorrent:latest
@@ -182,7 +182,7 @@ docker run -d --name qbittorrent \
   -p 6881:6881 \
   -p 6881:6881/udp \
   -p 8080:8080 \
-  -v ./data:/data \
+  -v ./data:/downloads \
   -v ./config:/config \
   -e QBT_WEBUI_PASSWORD=supersecret \
   -e QBT_WEBUI_PORT=8080 \

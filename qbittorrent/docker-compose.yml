@@ -14,7 +14,7 @@ services:
       - "6881:6881/udp"  # BitTorrent UDP  
       - "8080:8080"      # Web interface
     volumes:
-      - data:/data
+      - data:/downloads
       - ./config:/config
     environment:
       # Network Configuration

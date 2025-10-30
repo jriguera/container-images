@@ -27,7 +27,7 @@ LABEL build_version="QBittorrent version:- ${VERSION} Build-date:- ${BUILD_DATE}
 LABEL maintainer="jriguera"
 
 # environment variables
-ENV DATADIR=/data
+ENV DATADIR=/downloads
 ENV CONFIGDIR=/config
 ENV PORT=8080
 

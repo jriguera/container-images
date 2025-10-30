@@ -2,7 +2,7 @@
 # shellcheck shell=bash
 set -eu
 
-DATADIR="${DATADIR:-/data}"
+DATADIR="${DATADIR:-/downloads}"
 CONFIGDIR="${CONFIGDIR:-/config}"
 QBITTORRENT_CONFIG="${CONFIGDIR}/config/qBittorrent.conf"
 
