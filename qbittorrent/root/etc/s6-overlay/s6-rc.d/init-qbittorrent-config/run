@@ -16,7 +16,7 @@ then
 fi
 
 # Initialize default values for qBittorrent configuration variables
-export QBT_WEBUI_PORT="${QBT_WEBUI_PORT:-${PORT:-8080}}"
+export QBT_WEBUI_PORT="${QBT_WEBUI_PORT:-${PORT:-9191}}"
 export QBT_WEBUI_ENABLED="${QBT_WEBUI_ENABLED:-true}"
 export QBT_WEBUI_PASSWORD="${QBT_WEBUI_PASSWORD:-}"
 export QBT_WEBUI_ROOTDIR="${QBT_WEBUI_ROOTDIR:-${CONFIGDIR}/webui}"

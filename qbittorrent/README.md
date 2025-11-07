@@ -25,7 +25,7 @@ Given the docker image with name `qbittorrent`:
 docker run --rm -ti --name qbittorrent \
   -p 6881:6881 \
   -p 6881:6881/udp \
-  -p 8080:8080 \
+  -p 9191:9191 \
   -v $(pwd)/data:/downloads \
   -v $(pwd)/config:/config \
   qbittorrent
@@ -42,17 +42,17 @@ services:
     ports:
       - "6881:6881"      # BitTorrent TCP
       - "6881:6881/udp"  # BitTorrent UDP  
-      - "8080:8080"      # Web interface
+      - "9191:9191"      # Web interface
     volumes:
       - ./data:/downloads
       - ./config:/config
     environment:
       - QBT_WEBUI_PASSWORD=mysecretpassword
-      - QBT_WEBUI_PORT=8080
+      - QBT_WEBUI_PORT=9191
       - QBT_TORRENT_PORT=6881
 ```
 
-You can access the web interface at `http://localhost:8080` using the configured password.
+You can access the web interface at `http://localhost:9191` using the configured password.
 
 ## Environment Variables
 
@@ -67,7 +67,7 @@ QBT_TORRENT_IFACE_ADDR=0.0.0.0     # Interface address (default: 0.0.0.0)
 ### Web UI Configuration
 
 ```bash
-QBT_WEBUI_PORT=8080                # Web interface port (default: 8080)
+QBT_WEBUI_PORT=9191                # Web interface port (default: 9191)
 QBT_WEBUI_ENABLED=true             # Enable web interface (default: true)
 QBT_WEBUI_PASSWORD=                # Web interface password (plain text)
 
@@ -106,7 +106,7 @@ GENERATE_CONFIG=true               # Generate config (true/1/True/TRUE or unset=
 
 The following default values are used when variables are not set:
 
-- **QBT_WEBUI_PORT**: 8080 (Web interface port)
+- **QBT_WEBUI_PORT**: 9191 (Web interface port)
 - **QBT_WEBUI_ENABLED**: true (Web interface enabled)
 - **QBT_TORRENT_PORT**: 6881 (BitTorrent port)
 - **QBT_TORRENT_IFACE_ADDR**: 0.0.0.0 (All interfaces)
@@ -148,13 +148,13 @@ The following ports are used by qBittorrent:
 | Port | Protocol | Description | Environment Variable |
 |------|----------|-------------|---------------------|
 | 6881 | TCP/UDP | BitTorrent network | QBT_TORRENT_PORT |
-| 8080 | TCP | Web interface | QBT_WEBUI_PORT |
+| 9191 | TCP | Web interface | QBT_WEBUI_PORT |
 
 ## Security Notes
 
 - **Password Security**: Use `QBT_WEBUI_PASSWORD` for plain text passwords (automatically hashed)
 - **Interface Binding**: Change `QBT_TORRENT_IFACE_ADDR` to bind to specific interfaces
-- **Web Interface**: Accessible at `http://container-ip:8080` with configured password
+- **Web Interface**: Accessible at `http://container-ip:9191` with configured password
 - **Default Credentials**: Username: `admin`, Password: (set via `QBT_WEBUI_PASSWORD`)
 
 ## Volumes
@@ -169,7 +169,7 @@ The following ports are used by qBittorrent:
 docker run -d --name qbittorrent \
   -p 6881:6881 \
   -p 6881:6881/udp \
-  -p 8080:8080 \
+  -p 9191:9191 \
   -v ./qbt-data:/downloads \
   -v ./qbt-config:/config \
   -e QBT_WEBUI_PASSWORD=mypassword \
@@ -181,11 +181,11 @@ docker run -d --name qbittorrent \
 docker run -d --name qbittorrent \
   -p 6881:6881 \
   -p 6881:6881/udp \
-  -p 8080:8080 \
+  -p 9191:9191 \
   -v ./data:/downloads \
   -v ./config:/config \
   -e QBT_WEBUI_PASSWORD=supersecret \
-  -e QBT_WEBUI_PORT=8080 \
+  -e QBT_WEBUI_PORT=9191 \
   -e QBT_TORRENT_PORT=6881 \
   -e QBT_GLOBAL_MAX_CONNECTIONS=500 \
   -e QBT_MAX_ACTIVE_DOWNLOADS=5 \

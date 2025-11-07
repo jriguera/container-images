@@ -14,7 +14,7 @@ then
 fi
 
 webui_port=$(grep -Po "^WebUI\\\Port=\K(.*)" "${QBITTORRENT_CONFIG}")
-[[ -z ${webui_port} ]] && webui_port="${QBT_WEBUI_PORT:-${PORT:-8080}}"
+[[ -z ${webui_port} ]] && webui_port="${QBT_WEBUI_PORT:-${PORT:-9191}}"
 torrenting_port=$(grep -Po "^Session\\\Port=\K(.*)" "${QBITTORRENT_CONFIG}")
 
 if [[ -z ${LSIO_NON_ROOT_USER} ]]

@@ -29,7 +29,7 @@ LABEL maintainer="jriguera"
 # environment variables
 ENV DATADIR=/downloads
 ENV CONFIGDIR=/config
-ENV PORT=8080
+ENV PORT=9191
 
 # add unrar
 COPY --from=unrar /usr/bin/unrar-alpine /usr/bin/unrar

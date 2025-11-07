@@ -12,7 +12,7 @@ services:
     ports:
       - "6881:6881"      # BitTorrent TCP
       - "6881:6881/udp"  # BitTorrent UDP  
-      - "8080:8080"      # Web interface
+      - "9191:9191"      # Web interface
     volumes:
       - data:/downloads
       - ./config:/config
@@ -20,7 +20,7 @@ services:
       # Network Configuration
       - QBT_TORRENT_PORT=6881
       # Web UI Configuration
-      - QBT_WEBUI_PORT=8080
+      - QBT_WEBUI_PORT=9191
       - QBT_WEBUI_PASSWORD=mysecretpassword
       # Performance & Limits
       - QBT_MEMORY_WORKING_SET_LIMIT=1024

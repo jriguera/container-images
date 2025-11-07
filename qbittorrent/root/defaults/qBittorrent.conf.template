@@ -65,7 +65,7 @@ WebUI\AuthSubnetWhitelist=@Invalid()
 WebUI\BanDuration=120
 WebUI\HostHeaderValidation=false
 WebUI\Password_PBKDF2=\"@ByteArray(fkd7V66YmR7N1pZY34EvZA==:xEHtRmYm7FVKbj0HKWFhzzO+YkgvE3wnt6KRgm+buF103sJ9ZS2aqNlVyPR9rsWJfjQx6sZG00QYZsaiH9pWpg==)\"
-WebUI\Port=${QBT_WEBUI_PORT:-8080}
+WebUI\Port=${QBT_WEBUI_PORT:-9191}
 WebUI\RootFolder=${QBT_WEBUI_ROOTDIR:-${CONFIGDIR}/webui}
 WebUI\ServerDomains=*
 
