@@ -4,6 +4,7 @@
 # Container config directories (mounted volumes)
 */config/
 */data/
+tasmoadmin/config
 
 # Docker Compose override files
 docker-compose.override.yml
