@@ -1,0 +1,2 @@
+/config/tasmoadmin/*
+/var/www/tasmoadmin/data/*

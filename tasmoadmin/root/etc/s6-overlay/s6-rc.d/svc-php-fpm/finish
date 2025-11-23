@@ -1,0 +1,5 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+echo "Caught SIGTERM signal for PHP-FPM!"
+kill -TERM "$(cat  /var/run/php-fpm84.pid)" 2>/dev/null

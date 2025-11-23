@@ -1,0 +1,55 @@
+server {
+    server_name ${NGINX_SERVER_NAME};
+    listen ${NGINX_PORT} default_server;
+    root /var/www/tasmoadmin/;
+    index index.php index.html index.htm;
+    ${NGINX_SSL_INCLUDE}
+
+    fastcgi_buffer_size 512k;
+    fastcgi_buffers 16 512k;
+
+    location / {
+        try_files $uri /index.php$is_args$args;
+    }
+
+    # deny access to .htaccess/.htpasswd files
+    location ~ /\.ht {
+        deny all;
+    }
+
+    location /data/firmwares {
+        alias ${CONFIGDIR}/tasmoadmin/firmwares;
+        add_header Access-Control-Allow-Origin *;
+    }
+
+    location /data/tasmoadmin/ {
+        alias ${CONFIGDIR}/tasmoadmin;
+        deny all;
+    }
+
+    location ~ ^(.*)\.(css|js|gif||jpe?g|png|json|cache\.json)$ {
+    }
+
+    location ~ ^/index\.php(/|$) {
+        fastcgi_pass 127.0.0.1:9001;
+        fastcgi_read_timeout 900;
+        fastcgi_split_path_info ^(.+\.php)(/.*)$;
+        # include ${CONFIGDIR_SITES}/${FASTCGI_PARAMS_FILE};
+        include fastcgi_params;
+
+        fastcgi_param SERVER_ADDR        $server_addr;
+        fastcgi_param SERVER_PORT        $server_port;
+        fastcgi_param SERVER_NAME        $server_name;
+        fastcgi_param REDIRECT_STATUS    200;
+        fastcgi_param HTTP_PROXY         "";
+        fastcgi_param PATH_INFO          $fastcgi_path_info;
+        
+        # Use $realpath_root to resolve symlinks for data and tmp directories
+        fastcgi_param SCRIPT_FILENAME    $realpath_root$fastcgi_script_name;
+        fastcgi_param DOCUMENT_ROOT      $realpath_root;
+        
+        # Custom build information
+        fastcgi_param BUILD_VERSION      latest;
+        fastcgi_param BUILD_REF          main;
+    }
+}

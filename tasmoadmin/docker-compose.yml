@@ -1,0 +1,30 @@
+version: "3.9"
+services:
+  tasmoadmin:
+    build:
+      context: .
+    image: tasmoadmin:latest
+    restart: unless-stopped
+    networks:
+      - tasmoadmin
+    ports:
+      - "8088:8088"      # Web interface
+    volumes:
+      - ./config:/config
+    environment:
+      # User/Group Identifiers
+      - PUID=1000
+      - PGID=1000
+      # Timezone
+      - TZ=Etc/UTC
+      # Application
+      - PORT=8088
+      - SSL=false
+      # TasmoAdmin Settings
+      - TA_OTA_IP=""                               # IP address for OTA updates (optional)
+      - TA_USER="admin"                            # TasmoAdmin username (default: admin)
+      - TA_PASSWORD="admin"
+networks:
+  tasmoadmin:
+    name: tasmoadmin
+    driver: bridge

@@ -12,6 +12,7 @@ This repository contains Docker container images for various applications, all b
 | [mosquitto](mosquitto) | Eclipse Mosquitto MQTT broker | [README](mosquitto/README.md) |
 | [qbittorrent](qbittorrent) | qBittorrent BitTorrent client | [README](qbittorrent/README.md) |
 | [prowlarr](prowlarr) | Prowlarr indexer | [README](prowlarr/README.md) |
+| [tasmoadmin](tasmoadmin) | TasmoAdmin web interface for managing Tasmota devices | [README](tasmoadmin/README.md) |
 | [wireguard](wireguard) | Wireguard VPN | [README](wireguard/README.md) |
 
 ## Common Environment Variables

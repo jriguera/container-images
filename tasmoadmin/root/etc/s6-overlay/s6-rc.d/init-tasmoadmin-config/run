@@ -1,0 +1,114 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+export CONFIGDIR="${CONFIGDIR:-/config}"
+export CONFIGDIR_NGINX="${CONFIGDIR_NGINX:-$CONFIGDIR/nginx}"
+export CONFIGDIR_SITES="${CONFIGDIR_SITES:-$CONFIGDIR_NGINX/site-confs}"
+export CONFIGDIR_TEMPLATES="${CONFIGDIR_TEMPLATES:-$CONFIGDIR/templates}"
+export CONFIGDIR_LOGS="${CONFIGDIR_LOGS:-$CONFIGDIR/log/php}"
+export CONFIGFILE="${CONFIGDIR}/tasmoadmin/MyConfig.json"
+
+export BUILD_VERSION="${BUILD_VERSION:-unknown}"
+export BUILD_REF="${BUILD_REF:-unknown}"
+
+export NGINX_SERVER_NAME="${NGINX_SERVER_NAME:-tasmoadmin.local}"
+export NGINX_PORT="${NGINX_PORT:-${PORT:-8080}}"
+
+TA_OTA_IP="${TA_OTA_IP:-}"
+TA_USER="${TA_USER:-admin}"
+TA_PASSWORD="${TA_PASSWORD:-admin}"
+
+# Hardcoded list of environment variables for envsubst
+# This prevents envsubst from replacing nginx variables like $uri, $host, $http_upgrade, etc.
+ENVSUBST_VARS='${CONFIGDIR} ${CONFIGDIR_TEMPLATES} ${CONFIGDIR_LOGS} ${CONFIGDIR_SITES} ${NGINX_SERVER_NAME} ${NGINX_USER} ${NGINX_PORT} ${NGINX_SSL_INCLUDE} ${BUILD_VERSION} ${BUILD_REF}'
+
+# make folders if required
+mkdir -p "${CONFIGDIR}" "${CONFIGDIR_TEMPLATES}" "${CONFIGDIR_LOGS}"
+
+# load env file if it exists
+if [[ -f "${CONFIGDIR}/env" ]]
+then
+    # shellcheck source=/dev/null
+    source "${CONFIGDIR}/env"
+fi
+
+# precreate log files
+[[ ! -f ${CONFIGDIR_LOGS}/error.log ]] && touch ${CONFIGDIR_LOGS}/error.log
+
+# Generate configuration file if GENERATE_CONFIG is true, 1, True, TRUE or not defined
+if [[ -z "${GENERATE_CONFIG}" ]] || [[ "${GENERATE_CONFIG,,}" == "true" ]] || [[ "${GENERATE_CONFIG}" == "1" ]]
+then
+    mkdir -p "${CONFIGDIR_SITES}"
+    [[ ! -f "$CONFIGDIR_TEMPLATES/default.conf.template" ]] && cp "/defaults/nginx/site-confs/default.conf.template" "${CONFIGDIR_TEMPLATES}/default.conf.template"
+    envsubst "$ENVSUBST_VARS" < "${CONFIGDIR_TEMPLATES}/default.conf.template" > "${CONFIGDIR_SITES}/default.conf"
+fi
+
+echo "* Generating tasmoadmin php configuration from environment variables ..."
+# set local timezone
+printf "date.timezone=%s\\n" "${TZ:-UTC}" > "/etc/php84/conf.d/30_timezone.ini"
+envsubst "$ENVSUBST_VARS" < "/defaults/php-fpm.d/www.conf.template" > "/etc/php84/php-fpm.d/www.conf"
+
+echo '* Data directory initialization ...'
+mkdir -p "${CONFIGDIR}/tasmoadmin"
+# Create /data/tasmoadmin/firmware if it does not exists
+mkdir -p "${CONFIGDIR}/tasmoadmin/firmwares"
+# Create /data/tasmoadmin/updates if it does not exists
+mkdir -p "${CONFIGDIR}/tasmoadmin/updates"
+
+[[ ! -d "${CONFIGDIR}/tmp" ]] && mv /var/www/tasmoadmin/tmp "${CONFIGDIR}"/tmp || rm -rf /var/www/tasmoadmin/tmp
+ln -sf ${CONFIGDIR}/tmp /var/www/tasmoadmin/tmp
+
+# Ensure file permissions
+find "${CONFIGDIR}/tasmoadmin" -not -perm 0644 -type f -exec chmod 0644 {} \;
+find "${CONFIGDIR}/tasmoadmin" -not -perm 0755 -type d -exec chmod 0755 {} \;
+
+# Generate MyConfig.json if it doesn't exist
+if [[ ! -f "${CONFIGFILE}" ]]
+then
+    echo "* Generating ${CONFIGFILE} ..."
+    # Generate password hash
+    password_hash=$(php -r "echo password_hash('${TA_PASSWORD}', PASSWORD_DEFAULT);")
+    # Generate MyConfig.json configuration file
+    cat >  "${CONFIGFILE}" <<-EOF
+		{
+			"ota_server_ip": "${TA_OTA_IP}",
+			"ota_server_port": "${NGINX_PORT}",
+			"username": "${TA_USER}",
+			"password": "${password_hash}",
+			"refreshtime": "8",
+			"current_git_tag": "",
+			"update_automatic_lang": "tasmota-sensors",
+			"nightmode": "auto",
+			"login": "1",
+			"scan_from_ip": "",
+			"scan_to_ip": "",
+			"port": "80",
+			"homepage": "start",
+			"check_for_updates": "3",
+			"minimize_resources": "1",
+			"update_channel": "docker",
+			"hide_copyright": "1",
+			"show_search": "1",
+			"update_fe_check": "0",
+			"update_be_check": "1",
+			"update_newer_only": "1",
+			"auto_update_channel": "stable",
+			"force_upgrade": "0",
+			"connect_timeout": "5",
+			"timeout": "5",
+			"request_concurrency": "50"
+		}
+	EOF
+else
+    echo "* Updating MyConfig.json with current environment variables ..."
+    # Update only the three values using jq, preserving all other settings
+    updated_json=$(jq --arg ota "${TA_OTA_IP}" --arg p "${NGINX_PORT}" --arg u "${TA_USER}" --arg pa "${password_hash}" \
+        '.ota_server_ip = $ota | .ota_server_port = $p | .username = $u | .password = $pa' "${CONFIGFILE}")
+    echo "${updated_json}" > "${CONFIGFILE}"
+fi
+
+if [[ -z ${LSIO_NON_ROOT_USER} ]]
+then
+    lsiown -R abc:abc "${CONFIGDIR}/tasmoadmin" "${CONFIGDIR}/tmp"
+    chmod a+r "${CONFIGFILE}"
+fi

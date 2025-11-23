@@ -1,0 +1,138 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+export CONFIGDIR="${CONFIGDIR:-/config}"
+export CONFIGDIR_TEMPLATES="${CONFIGDIR_TEMPLATES:-$CONFIGDIR/templates}"
+export CONFIGDIR_NGINX="${CONFIGDIR_NGINX:-$CONFIGDIR/nginx}"
+export CONFIGDIR_CERTS="${CONFIGDIR_CERTS:-$CONFIGDIR_NGINX/certs}"
+export CONFIGDIR_SITES="${CONFIGDIR_SITES:-$CONFIGDIR_NGINX/site-confs}"
+export CONFIGDIR_LOGS="${CONFIGDIR_LOGS:-$CONFIGDIR/log/nginx}"
+
+export NGINX_SERVER_NAME="${NGINX_SERVER_NAME:-tasmoadmin.local}"
+export NGINX_PORT="${NGINX_PORT:-${PORT:-8080}}"
+export NGINX_SSL="${NGINX_SSL:-false}"
+export NGINX_CONFIG_FILE="${NGINX_CONFIG_FILE:-nginx.conf.template}"
+export NGINX_CONFIG_FILE_SSL="${NGINX_CONFIG_FILE_SSL:-ssl.conf.template}"
+export NGINX_SSL_INCLUDE=""
+[[ "${NGINX_SSL,,}" == "true" ]] || [[ "${NGINX_SSL}" == "1" ]] && NGINX_SSL_INCLUDE="include ${CONFIGDIR_NGINX}/ssl.conf;"
+
+
+# Write environment variables to s6 container environment so other scripts can access them
+for var in NGINX_SERVER_NAME NGINX_USER NGINX_PORT NGINX_SSL NGINX_CONFIG_FILE NGINX_CONFIG_FILE_SSL NGINX_SSL_INCLUDE
+do
+    printf "%s" "${!var}" > "/run/s6/container_environment/${var}"
+done
+
+# Hardcoded list of environment variables for envsubst
+# This prevents envsubst from replacing nginx variables like $uri, $host, $http_upgrade, etc.
+ENVSUBST_VARS='${CONFIGDIR} ${CONFIGDIR_TEMPLATES} ${CONFIGDIR_NGINX} ${CONFIGDIR_CERTS} ${CONFIGDIR_SITES} ${CONFIGDIR_LOGS} ${NGINX_SERVER_NAME} ${NGINX_USER} ${NGINX_PORT} ${NGINX_SSL} ${NGINX_SSL_INCLUDE}'
+
+# Main logic starts here
+mkdir -p "${CONFIGDIR_NGINX}" "${CONFIGDIR_TEMPLATES}" "${CONFIGDIR_LOGS}" "${CONFIGDIR_SITES}"
+
+# Load env file if it exists
+if [[ -f "${CONFIGDIR}/env" ]]
+then
+    # shellcheck source=/dev/null
+    source "${CONFIGDIR}/env"
+fi
+
+# Generate configuration file if GENERATE_CONFIG is true, 1, True, TRUE or not defined
+if [[ -z "${GENERATE_CONFIG}" ]] || [[ "${GENERATE_CONFIG,,}" == "true" ]] || [[ "${GENERATE_CONFIG}" == "1" ]]
+then
+    echo "* Generating default configuration from environment variables ..."
+    # Render a template configuration file
+    # expand variables + preserve formatting
+    # prepare templates, so user can modify them if needed
+    [[ ! -f "$CONFIGDIR_TEMPLATES/${NGINX_CONFIG_FILE}" ]] && cp "/defaults/nginx/${NGINX_CONFIG_FILE}" "${CONFIGDIR_TEMPLATES}/${NGINX_CONFIG_FILE}"
+    envsubst "$ENVSUBST_VARS" < "${CONFIGDIR_TEMPLATES}/${NGINX_CONFIG_FILE}" > "${CONFIGDIR_NGINX}/nginx.conf"
+
+    if [[ "${NGINX_SSL,,}" == "true" ]] || [[ "${NGINX_SSL}" == "1" ]]
+    then
+        mkdir -p "${CONFIGDIR_CERTS}"
+        [[ ! -d "${CONFIGDIR_CERTS}" ]] && cp -r "/defaults/certs" "${CONFIGDIR_CERTS}"
+        [[ ! -f "$CONFIGDIR_TEMPLATES/${NGINX_CONFIG_FILE_SSL}" ]] && cp "/defaults/nginx/${NGINX_CONFIG_FILE_SSL}" "${CONFIGDIR_TEMPLATES}/${NGINX_CONFIG_FILE_SSL}"
+        envsubst "$ENVSUBST_VARS" < "${CONFIGDIR_TEMPLATES}/${NGINX_CONFIG_FILE_SSL}" > "${CONFIGDIR_NGINX}/ssl.conf"
+        # copy pre-generated dhparams or generate if needed
+        [[ ! -f "$CONFIGDIR_TEMPLATES/dhparams.pem" ]] && cp "/defaults/nginx/dhparams.pem" "${CONFIGDIR_TEMPLATES}/dhparams.pem"
+        [[ ! -f "${CONFIGDIR_NGINX}/dhparams.pem" ]] && cp "${CONFIGDIR_TEMPLATES}/dhparams.pem" "${CONFIGDIR_NGINX}/dhparams.pem"
+        if ! grep -q 'PARAMETERS' "${CONFIGDIR_NGINX}/dhparams.pem"
+        then
+            curl -o ${CONFIGDIR_NGINX}/dhparams.pem -L "https://ssl-config.mozilla.org/ffdhe4096.txt"
+        fi
+    fi
+
+    # Set resolver, ignore ipv6 addresses
+    touch ${CONFIGDIR_NGINX}/resolver.conf
+    if ! grep -q 'resolver' ${CONFIGDIR_NGINX}/resolver.conf
+    then
+        RESOLVERRAW=$(awk 'BEGIN{ORS=" "} $1=="nameserver" {print $2}' /etc/resolv.conf)
+        for i in ${RESOLVERRAW}; do
+            if [[ "$(awk -F ':' '{print NF-1}' <<<"${i}")" -le 2 ]]; then
+                RESOLVER="${RESOLVER} ${i}"
+            fi
+        done
+        [[ -z "${RESOLVER}" ]] && RESOLVER="127.0.0.1"
+        echo "Setting resolver to ${RESOLVER}"
+        RESOLVEROUTPUT="# This file is auto-generated only on first start, based on the container's /etc/resolv.conf file. Feel free to modify it as you wish.\n\nresolver ${RESOLVER} valid=30s;"
+        echo -e "${RESOLVEROUTPUT}" > "${CONFIGDIR_NGINX}/resolver.conf"
+    fi
+
+    # Set worker_processes
+    touch ${CONFIGDIR_NGINX}/worker_processes.conf
+    if ! grep -q 'worker_processes' ${CONFIGDIR_NGINX}/worker_processes.conf
+    then
+        WORKER_PROCESSES=$(nproc)
+        echo "Setting worker_processes to ${WORKER_PROCESSES}"
+        echo -e "# This file is auto-generated only on first start, based on the cpu cores detected. Feel free to change it to any other number or to auto to let nginx handle it automatically.\n\nworker_processes ${WORKER_PROCESSES};" > ${CONFIGDIR_NGINX}/worker_processes.conf
+    fi
+
+    # Set default site config if none exists
+    if [[ ! -d ${CONFIGDIR_SITES} ]]
+    then
+        mkdir -p "${CONFIGDIR_SITES}"
+        # # copy index.html if no index file exists
+        # INDEX_EXISTS=false
+        # for file in ${CONFIGDIR}/www/index.*
+        # do
+        #     if [[ -e "${file}" ]]
+        #     then
+        #         INDEX_EXISTS=true
+        #         break
+        #     fi
+        # done
+        # if [[ ${INDEX_EXISTS} == false ]] && grep -Eq '^\s*index[^#]*index\.html' "${CONFIGDIR_SITES}/**/*.conf"
+        # then
+        #     cp /defaults/www/index.html ${CONFIGDIR}/www/index.html
+        # fi
+    fi
+fi
+
+if [[ -z ${LSIO_READ_ONLY_FS} ]] && [[ -z ${LSIO_NON_ROOT_USER} ]]
+then
+    # permissions
+    lsiown -R abc:abc /var/lib/nginx
+    chmod -R 644 /etc/logrotate.d
+fi
+
+if [[ -f "${CONFIGDIR}/log/logrotate.status" ]]
+then
+    chmod 600 "${CONFIGDIR}/log/logrotate.status"
+fi
+
+# # precreate log files
+for file in "${CONFIGDIR_LOGS}/access.log" "${CONFIGDIR_LOGS}/error.log"
+do
+    [[ ! -f "${file}" ]] && touch "${file}"
+done
+
+if [[ -z ${LSIO_NON_ROOT_USER} ]]
+then
+    lsiown -R abc:abc "${CONFIGDIR}" "${CONFIGDIR_LOGS}" "${CONFIGDIR_SITES}"
+fi
+
+# remove orphan pid file
+if [[ -f /run/nginx.pid ]]
+then
+    rm -f /run/nginx.pid
+fi
