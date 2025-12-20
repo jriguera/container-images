@@ -91,12 +91,12 @@ then
     else
         echo "* File ipfilter.dat already exist or IPFilterURL is empty. You can disable this mod with DOWNLOAD_RESOURCES=false"
     fi
-    if [[ ! -f "${CONFIGDIR}/servers.met" ]] && [[ -n "$Ed2kServersUrl" ]]
+    if [[ ! -f "${CONFIGDIR}/server.met" ]] && [[ -n "$Ed2kServersUrl" ]]
     then
-        echo "Downloading servers.met from $Ed2kServersUrl ..."
-        curl -s -o "${CONFIGDIR}/servers.met" "${Ed2kServersUrl}"
+        echo "Downloading server.met from $Ed2kServersUrl ..."
+        curl -s -o "${CONFIGDIR}/server.met" "${Ed2kServersUrl}"
     else
-        echo "* File servers.met already exist or Ed2kServersUrl is empty. You can disable this mod with DOWNLOAD_RESOURCES=false"
+        echo "* File server.met already exist or Ed2kServersUrl is empty. You can disable this mod with DOWNLOAD_RESOURCES=false"
     fi
 fi
 
