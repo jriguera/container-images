@@ -2,6 +2,18 @@
 
 FROM docker.io/serjs/go-socks5-proxy:latest AS socks5proxy
 
+
+# Container versions
+ARG GOLANG_VERSION=1.25.5
+FROM docker.io/library/golang:${GOLANG_VERSION}-alpine AS go-builder
+# Download Go modules
+COPY container-network /app
+# Set destination for COPY
+WORKDIR /app
+RUN go mod download
+RUN make build
+
+
 FROM ghcr.io/linuxserver/baseimage-alpine:3.22
 
 # set version label
@@ -69,6 +81,7 @@ RUN chmod a+x /healthcheck.sh && \
 
 # add socks5 proxy
 COPY --from=socks5proxy /socks5 /usr/bin/socks5
+COPY --from=go-builder /app/build/container-network /usr/bin/container-network
 
 # Download and install webhook binary
 RUN \

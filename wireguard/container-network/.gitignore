@@ -1,0 +1,21 @@
+# Build output
+build/
+dist/
+
+# Binary
+container-network
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
