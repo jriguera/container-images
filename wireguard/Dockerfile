@@ -3,13 +3,15 @@
 # Container versions
 ARG GOLANG_VERSION=1.25.5
 FROM docker.io/library/golang:${GOLANG_VERSION}-alpine AS go-builder
+ARG VERSION="latest"
+ARG COMMIT_SHA="main"
 RUN apk add --no-cache make git ca-certificates
 # Download Go modules
 COPY container-network /app
 # Set destination for COPY
 WORKDIR /app
 RUN go mod download
-RUN make build
+RUN make build VERSION="${VERSION}"
 
 
 FROM docker.io/serjs/go-socks5-proxy:latest AS socks5proxy

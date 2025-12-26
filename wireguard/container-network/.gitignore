@@ -2,9 +2,6 @@
 build/
 dist/
 
-# Binary
-container-network
-
 # IDE
 .idea/
 .vscode/
