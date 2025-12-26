@@ -234,11 +234,11 @@ func (h *Handler) iptablesMarkRule(logger *slog.Logger, action, protocol string,
 		"--set-mark", h.iptablesMangleMarkPublishedPorts,
 	}
 	logger.Debug("Executing iptables", "args", strings.Join(args, " "))
-	// cmd := exec.Command("iptables", args...)
-	// output, err := cmd.CombinedOutput()
-	// if err != nil {
-	// 	return fmt.Errorf("%v: %s", err, string(output))
-	// }
+	cmd := exec.Command("iptables", args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%v: %s", err, string(output))
+	}
 	return nil
 }
 
@@ -286,11 +286,11 @@ func (h *Handler) iptablesDNATRule(logger *slog.Logger, action, protocol string,
 		"--to-destination", fmt.Sprintf("%s:%d", containerIP, port),
 	}
 	logger.Debug("Executing iptables", "args", strings.Join(args, " "))
-	// cmd := exec.Command("iptables", args...)
-	// output, err := cmd.CombinedOutput()
-	// if err != nil {
-	// 	return fmt.Errorf("%v: %s", err, string(output))
-	// }
+	cmd := exec.Command("iptables", args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%v: %s", err, string(output))
+	}
 	return nil
 }
 
@@ -305,10 +305,10 @@ func (h *Handler) iptablesForwardRule(logger *slog.Logger, action, protocol stri
 		"-j", "ACCEPT",
 	}
 	logger.Debug("Executing iptables", "args", strings.Join(args, " "))
-	// cmd := exec.Command("iptables", args...)
-	// output, err := cmd.CombinedOutput()
-	// if err != nil {
-	// 	return fmt.Errorf("%v: %s", err, string(output))
-	// }
+	cmd := exec.Command("iptables", args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%v: %s", err, string(output))
+	}
 	return nil
 }
