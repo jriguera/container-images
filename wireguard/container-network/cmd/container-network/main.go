@@ -104,7 +104,7 @@ func runScript(script string) error {
 	}
 	scanner = bufio.NewScanner(&stderr)
 	for scanner.Scan() {
-		slog.Error(scanner.Text())
+		slog.Debug(scanner.Text())
 	}
 	return err
 }
