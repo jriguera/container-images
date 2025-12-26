@@ -3,6 +3,7 @@
 # Container versions
 ARG GOLANG_VERSION=1.25.5
 FROM docker.io/library/golang:${GOLANG_VERSION}-alpine AS go-builder
+RUN apk add --no-cache make git ca-certificates
 # Download Go modules
 COPY container-network /app
 # Set destination for COPY
