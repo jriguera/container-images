@@ -16,6 +16,7 @@ Most of this work is based on https://github.com/linuxserver/docker-wireguard
 - **SOCKS5 proxy**: Optional proxy support
 - **Webhook API**: HTTP endpoints for management and monitoring
 - **Health checks**: Built-in container health monitoring
+- **Container Network**: Dynamic iptables management for routing container traffic via VPN or provider network
 
 ## Quick Start
 
@@ -96,6 +97,27 @@ Format: `WG_SERVER_ALLOWEDIPS_PEER_<peername>=<cidrs>`
 |----------|---------|-------------|
 | `COREDNS_PORT` | `53` | CoreDNS server port |
 | `PROXY_PORT` | `1080` | SOCKS5 proxy port (if enabled) |
+
+### Container Network Configuration
+
+The `container-network` daemon watches Docker/Podman containers and manages iptables rules for routing. It enables selective public access to container ports via the VPN while routing other traffic through the provider network. See [container-network/README.md](container-network/README.md) for detailed documentation.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `RUNTIME_API` | _auto-detect_ | Path to Docker/Podman socket |
+| `WATCH_NETWORK` | `bridge` | Docker network to watch for containers |
+| `WATCH_CONTAINER_LABEL` | `network.enable` | Label that must be `true` on containers to be managed |
+| `IPTABLES_MANGLE_MARK_PUBLISHED_PORTS` | `2` | Mark value for published port packets |
+| `IPTABLES_DNAT_PORTS_LABEL` | `network.dnat.ports` | Container label specifying ports to DNAT |
+| `STARTUP_SCRIPT` | `/usr/local/bin/container-network-startup.sh` | Script to run before starting |
+| `SHUTDOWN_SCRIPT` | `/usr/local/bin/container-network-shutdown.sh` | Script to run on shutdown |
+
+For the default startup and shutdown scripts these environment variables are needed:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `INTERNAL_NET_SUBNET` | _(none)_ | Internal subnet |
+| `INTERNAL_NET_GW` | _(none)_ | Gateway in the internal subnet |
 
 ## Volume Mounts
 

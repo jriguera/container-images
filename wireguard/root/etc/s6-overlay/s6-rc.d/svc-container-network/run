@@ -1,0 +1,37 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+# Set default config directory if not provided
+CONFIGDIR="${CONFIGDIR:-/config}"
+
+# Enable ProxySocks by default in client mode
+[[ -z "$WG_PEERS" ]] && CONTAINER_NETWORK_ENABLED="${CONTAINER_NETWORK_ENABLED:-true}" || CONTAINER_NETWORK_ENABLED="${CONTAINER_NETWORK_ENABLED:-false}" 
+CONTAINER_NETWORK_ENABLED="${CONTAINER_NETWORK_ENABLED,,}"
+
+export IPTABLES_MANGLE_MARK_PUBLISHED_PORTS="${IPTABLES_MANGLE_MARK_PUBLISHED_PORTS:-2}"
+export STARTUP_SCRIPT=${STARTUP_SCRIPT:-/usr/local/bin/container-network-startup.sh}
+export SHUTDOWN_SCRIPT=${SHUTDOWN_SCRIPT:-/usr/local/bin/container-network-shutdown.sh}
+
+if [[ ${CONTAINER_NETWORK_ENABLED} == "false" ]]
+then
+    echo "* Disabling Container-Network ..."
+    s6-notifyoncheck -d -n 300 -w 60000 -c "true" "sleep infinity"
+else
+    if [[ -z "${INTERNAL_NET_SUBNET}" ]]
+    then
+        echo "ERROR: INTERNAL_NET_SUBNET is not defined. Cannot start Container-Network."
+        exit 1
+    fi
+    if [[ -z "${PROVIDER_NET_GW}" ]]
+    then
+        echo "ERROR: PROVIDER_NET_GW is not defined. Cannot start Container-Network."
+        exit 1
+    fi
+    echo "* Starting Container-Network ..."
+    if [[ -z ${LSIO_NON_ROOT_USER} ]]
+    then
+        exec s6-notifyoncheck -d -n 300 -w 60000 s6-setuidgid abc /usr/bin/container-network
+    else
+        exec s6-notifyoncheck -d -n 300 -w 60000 /usr/bin/container-network
+    fi
+fi
