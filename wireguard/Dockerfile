@@ -1,8 +1,5 @@
 # syntax=docker/dockerfile:1
 
-FROM docker.io/serjs/go-socks5-proxy:latest AS socks5proxy
-
-
 # Container versions
 ARG GOLANG_VERSION=1.25.5
 FROM docker.io/library/golang:${GOLANG_VERSION}-alpine AS go-builder
@@ -14,8 +11,10 @@ RUN go mod download
 RUN make build
 
 
-FROM ghcr.io/linuxserver/baseimage-alpine:3.22
+FROM docker.io/serjs/go-socks5-proxy:latest AS socks5proxy
 
+
+FROM ghcr.io/linuxserver/baseimage-alpine:3.22
 # set version label
 ARG BUILD_DATE="unknown"
 ARG VERSION="latest"
