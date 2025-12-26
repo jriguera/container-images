@@ -28,10 +28,5 @@ else
         exit 1
     fi
     echo "* Starting Container-Network ..."
-    if [[ -z ${LSIO_NON_ROOT_USER} ]]
-    then
-        exec s6-notifyoncheck -d -n 300 -w 60000 s6-setuidgid abc /usr/bin/container-network
-    else
-        exec s6-notifyoncheck -d -n 300 -w 60000 /usr/bin/container-network
-    fi
+    exec s6-notifyoncheck -d -n 300 -w 60000 /usr/bin/container-network
 fi
