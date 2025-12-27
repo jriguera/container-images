@@ -98,6 +98,35 @@ Format: `WG_SERVER_ALLOWEDIPS_PEER_<peername>=<cidrs>`
 | `COREDNS_PORT` | `53` | CoreDNS server port |
 | `PROXY_PORT` | `1080` | SOCKS5 proxy port (if enabled) |
 
+### Default Gateway Priority Configuration
+
+When running WireGuard in a container with an existing default route and different networks, you may want changing the default gw before WG starts. The container can automatically adjust the default gateway's metric (priority) at startup.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PRESET_DEFAULT_GW_IP` | _(none)_ | **Required to enable.** IP address of the existing default gateway |
+| `PRESET_DEFAULT_GW_DEV` | _(none)_ | Network device for the gateway (e.g., `eth0`). Optional |
+| `PRESET_DEFAULT_GW_PRIO` | `0` | Metric (priority) for the new default route. Higher values = lower priority |
+
+When `PRESET_DEFAULT_GW_IP` is set, the container will:
+
+1. Add a new default route with the specified metric (low priority)
+2. Delete the original default route (metric 0)
+
+This allows WireGuard to become the preferred route while keeping the provider network as a fallback.
+
+**Example:**
+
+```bash
+docker run -d \
+  --name=wireguard \
+  --cap-add=NET_ADMIN \
+  -e PRESET_DEFAULT_GW_IP=192.168.1.1 \
+  -e PRESET_DEFAULT_GW_DEV=eth0 \
+  -e PRESET_DEFAULT_GW_PRIO=500 \
+  ...
+```
+
 ### Container Network Configuration
 
 The `container-network` daemon watches Docker/Podman containers and manages iptables rules for routing. It enables selective public access to container ports via the VPN while routing other traffic through the provider network. See [container-network/README.md](container-network/README.md) for detailed documentation.

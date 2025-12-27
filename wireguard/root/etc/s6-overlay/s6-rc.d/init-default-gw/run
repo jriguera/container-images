@@ -1,0 +1,52 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+# This script changes the default gateway to use a lower priority (higher metric)
+# so that when WireGuard comes up, its default route takes precedence.
+#
+# If PRESET_DEFAULT_GW_IP is set (and optionally PRESET_DEFAULT_GW_DEV and PRESET_DEFAULT_GW_PRIO), it will:
+# 1. Add a new default route with the specified metric (default: 500, low priority)
+# 2. Delete the original default route (metric 0)
+#
+# This allows WireGuard to become the preferred route while keeping
+# the provider network as a fallback.
+
+if [[ -z "${PRESET_DEFAULT_GW_IP}" ]]; then
+    echo "* PRESET_DEFAULT_GW_IP not set, skipping default gateway change"
+    exit 0
+fi
+
+# Set default metric if not specified
+PRESET_DEFAULT_GW_PRIO="${PRESET_DEFAULT_GW_PRIO:-0}"
+
+echo "* Changing default gateway (with priority metric ${PRESET_DEFAULT_GW_PRIO})..."
+
+# Build the route command with optional device
+ROUTE_CMD="default via ${PRESET_DEFAULT_GW_IP}"
+if [[ -n "${PRESET_DEFAULT_GW_DEV}" ]]
+then
+    ROUTE_CMD="${ROUTE_CMD} dev ${PRESET_DEFAULT_GW_DEV}"
+    echo "*  Gateway: ${PRESET_DEFAULT_GW_IP} via ${PRESET_DEFAULT_GW_DEV}"
+else
+    echo "*  Gateway: ${PRESET_DEFAULT_GW_IP}"
+fi
+
+# Add a default route with high metric (low priority)
+# This ensures other default routes (like WireGuard) take precedence
+if ip route add ${ROUTE_CMD} metric ${PRESET_DEFAULT_GW_PRIO}
+then
+    echo "*  Added default route with metric ${PRESET_DEFAULT_GW_PRIO}"
+else
+    echo "*  ERROR: Failed to add default route with metric ${PRESET_DEFAULT_GW_PRIO}"
+    exit 1
+fi
+
+# Delete the original default route (without metric, usually metric 0)
+if ip route del default
+then
+    echo "*  Deleted original default route"
+else
+    echo "*  WARNING: Could not delete original default route (may not exist)"
+fi
+
+echo "* Default gateway priority changed successfully"
