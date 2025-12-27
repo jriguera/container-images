@@ -21,6 +21,14 @@ PRESET_DEFAULT_GW_PRIO="${PRESET_DEFAULT_GW_PRIO:-0}"
 
 echo "* Changing default gateway (with priority metric ${PRESET_DEFAULT_GW_PRIO})..."
 
+# Delete the original default route (without metric, usually metric 0)
+if ip route del default
+then
+    echo "*  Deleted original default route"
+else
+    echo "*  WARNING: Could not delete original default route (may not exist)"
+fi
+
 # Build the route command with optional device
 ROUTE_CMD="default via ${PRESET_DEFAULT_GW_IP}"
 if [[ -n "${PRESET_DEFAULT_GW_DEV}" ]]
@@ -39,14 +47,6 @@ then
 else
     echo "*  ERROR: Failed to add default route with metric ${PRESET_DEFAULT_GW_PRIO}"
     exit 1
-fi
-
-# Delete the original default route (without metric, usually metric 0)
-if ip route del default
-then
-    echo "*  Deleted original default route"
-else
-    echo "*  WARNING: Could not delete original default route (may not exist)"
 fi
 
 echo "* Default gateway priority changed successfully"
