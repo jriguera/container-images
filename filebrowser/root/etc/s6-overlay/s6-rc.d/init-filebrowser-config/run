@@ -59,16 +59,21 @@ for item in ${USERS_LIST[@]}
 do
     userpass=(${item//:/ })
     echo "* Allowing user "${userpass[0]}" and its password ..."
-    perms=(${userpass[2]//,/ })
     # if no permissions are provided, set admin as default
-    [[ -z "${userpass[2]}" ]] &&  perms=("admin") || perms=(${userpass[2]//,/ })
+    [[ -z "${userpass[2]}" ]] && perms=("admin") || perms=(${userpass[2]//,/ })
+    # Build permission flags: --perm.admin --perm.execute etc.
+    perm_flags=""
+    for p in ${perms[@]}
+    do
+        perm_flags="${perm_flags} --perm.${p}"
+    done
     if filebrowser --config="${FB_CONFIG_FILE}" --database="${FB_DATABASE}" users find "${userpass[0]}" &> /dev/null
     then
         echo "* User already exists, updating password"
-        filebrowser --config="${FB_CONFIG_FILE}" --database="${FB_DATABASE}" users update "${userpass[0]}" --password "${userpass[1]}" "${perms[@]/#/--perm.}"
+        filebrowser --config="${FB_CONFIG_FILE}" --database="${FB_DATABASE}" users update "${userpass[0]}" --password "${userpass[1]}" ${perm_flags}
     else
         echo "* User does not exist, creating it"
-        filebrowser --config="${FB_CONFIG_FILE}" --database="${FB_DATABASE}" users add "${userpass[0]}" "${userpass[1]}" "${perms[@]/#/--perm.}"
+        filebrowser --config="${FB_CONFIG_FILE}" --database="${FB_DATABASE}" users add "${userpass[0]}" "${userpass[1]}" ${perm_flags}
     fi
 done
 
