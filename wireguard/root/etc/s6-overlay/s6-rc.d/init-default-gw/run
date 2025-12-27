@@ -11,8 +11,8 @@
 # This allows WireGuard to become the preferred route while keeping
 # the provider network as a fallback.
 
-if [[ -z "${PRESET_DEFAULT_GW_IP}" ]]; then
-    echo "* PRESET_DEFAULT_GW_IP not set, skipping default gateway change"
+if [[ -z "${PRESET_DEFAULT_GW_IP}" ]]
+then
     exit 0
 fi
 
