@@ -28,5 +28,6 @@ else
         exit 1
     fi
     echo "* Starting Container-Network ..."
-    exec s6-notifyoncheck -d -n 300 -w 60000 /usr/bin/container-network
+    cmd="pgrep -f /usr/bin/container-network"
+    exec s6-notifyoncheck -d -n 300 -w 60000 -c "${cmd}" /usr/bin/container-network
 fi
