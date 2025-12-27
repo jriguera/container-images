@@ -15,7 +15,7 @@ export SHUTDOWN_SCRIPT=${SHUTDOWN_SCRIPT:-/usr/local/bin/container-network-shutd
 if [[ ${CONTAINER_NETWORK_ENABLED} == "false" ]]
 then
     echo "* Disabling Container-Network ..."
-    s6-notifyoncheck -d -n 300 -w 60000 -c "true" "sleep infinity"
+    s6-notifyoncheck  -n 30 -w 1000 -c "true" "sleep infinity"
 else
     if [[ -z "${INTERNAL_NET_SUBNET}" ]]
     then
@@ -28,6 +28,6 @@ else
         exit 1
     fi
     echo "* Starting Container-Network ..."
-    cmd="pgrep -n -f /usr/bin/container-network >/dev/null"
-    exec s6-notifyoncheck -d -n 300 -w 60000 -c "${cmd}" /usr/bin/container-network
+    cmd="pidof -q /usr/bin/container-network"
+    exec s6-notifyoncheck -n 30 -w 30000 -c "${cmd}" /usr/bin/container-network
 fi
