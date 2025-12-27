@@ -2,7 +2,7 @@
 set -x
 
 # Disable reverse path filtering (required for asymmetric routing)
-sysctl -w net.ipv4.conf.eth1.rp_filter=0
+#sysctl -w net.ipv4.conf.eth1.rp_filter=0
 
 # Allow forwarding between internal network and WireGuard
 iptables -I FORWARD -s ${INTERNAL_NET_SUBNET} -o wg0 -j ACCEPT
