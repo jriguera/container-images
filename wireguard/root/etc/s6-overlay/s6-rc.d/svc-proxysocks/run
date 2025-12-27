@@ -13,14 +13,14 @@ export REQUIRE_AUTH="${REQUIRE_AUTH:-false}"
 if [[ ${PROXY_ENABLED} == "false" ]]
 then
     echo "* Disabling ProxySocks"
-    s6-notifyoncheck -d -n 300 -w 60000 -c "true" "sleep infinity"
+    s6-notifyoncheck -n 300 -w 1000 -c "true" "sleep infinity"
 else
     cmd="nc -z 127.0.0.1 ${PROXY_PORT}"
     echo "* Starting ProxySocks ..."
     if [[ -z ${LSIO_NON_ROOT_USER} ]]
     then
-        exec s6-notifyoncheck -d -n 300 -w 60000 -c "${cmd}" s6-setuidgid abc /usr/bin/socks5
+        exec s6-notifyoncheck -n 300 -w 30000 -c "${cmd}" s6-setuidgid abc /usr/bin/socks5
     else
-        exec s6-notifyoncheck -d -n 300 -w 60000 -c "${cmd}" /usr/bin/socks5
+        exec s6-notifyoncheck -n 300 -w 30000 -c "${cmd}" /usr/bin/socks5
     fi
 fi

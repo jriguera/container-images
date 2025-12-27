@@ -19,15 +19,15 @@ WEBHOOK_ARGS=( -hooks "${CONFIGDIR_WEBHOOK}/hooks.yaml" -ip "${WEBHOOK_ADDR}" -p
 if [[ ${WEBHOOK_ENABLED} == "false" ]]
 then
     echo "* Disabling Webhook"
-    s6-notifyoncheck -d -n 300 -w 60000 -c "true" "sleep infinity"
+    s6-notifyoncheck -n 300 -w 1000 -c "true" "sleep infinity"
 else
   # Health check command
   cmd="nc -z ${WEBHOOK_ADDR} ${WEBHOOK_PORT}"
   echo "* Starting Webhook ..."
   if [[ -z ${LSIO_NON_ROOT_USER} ]]
   then
-      exec s6-notifyoncheck -d -n 300 -w 60000 -c "${cmd}" s6-setuidgid abc /usr/bin/webhook "${WEBHOOK_ARGS[@]}" -urlprefix ""
+      exec s6-notifyoncheck -n 300 -w 30000 -c "${cmd}" s6-setuidgid abc /usr/bin/webhook "${WEBHOOK_ARGS[@]}" -urlprefix ""
   else
-      exec s6-notifyoncheck -d -n 300 -w 60000 -c "${cmd}" /usr/bin/webhook "${WEBHOOK_ARGS[@]}" -urlprefix ""
+      exec s6-notifyoncheck -n 300 -w 30000 -c "${cmd}" /usr/bin/webhook "${WEBHOOK_ARGS[@]}" -urlprefix ""
   fi
 fi
