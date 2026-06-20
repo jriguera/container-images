@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1
 
 # Container versions
-ARG NODE_VERSION=22.20.0
-ARG COMPOSER_VERSION=2.8.12
+ARG NODE_VERSION=24.16.0
+ARG COMPOSER_VERSION=2.10.1
 
 FROM docker.io/library/node:${NODE_VERSION}-alpine AS node-builder
 
@@ -28,13 +28,13 @@ RUN composer install --optimize-autoloader --no-dev
 
 
 # syntax=docker/dockerfile:1
-FROM ghcr.io/linuxserver/baseimage-alpine:3.22
+FROM ghcr.io/linuxserver/baseimage-alpine:3.24
 
 # set version label
 ARG BUILD_DATE="unknown"
 ARG VERSION="latest"
 ARG COMMIT_SHA="main"
-ARG TA_VERSION=4.3.2
+ARG TA_VERSION=5.0.0
 
 LABEL org.opencontainers.image.created="${BUILD_DATE}"
 LABEL org.opencontainers.image.authors="linuxserver.io authors and jriguera"
@@ -68,14 +68,15 @@ RUN echo "**** install runtime packages ****" && \
     musl-utils \
     musl \
     nginx \
-    php84-curl \
-    php84-fpm \
-    php84-dom \
-    php84-json \
-    php84-session \
-    php84-zip \
-    php84-mbstring \
-    php84 \
+        php85-curl \
+        php85-fpm \
+        php85-dom \
+        php85-json \
+        php85-openssl \
+        php85-session \
+        php85-zip \
+        php85-mbstring \
+        php85 \
     apache2-utils \
     logrotate \
     openssl \
