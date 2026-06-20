@@ -2,4 +2,4 @@
 # shellcheck shell=bash
 
 echo "Caught SIGTERM signal for PHP-FPM!"
-kill -TERM "$(cat  /var/run/php-fpm84.pid)" 2>/dev/null
+kill -TERM "$(cat  /var/run/php-fpm85.pid)" 2>/dev/null

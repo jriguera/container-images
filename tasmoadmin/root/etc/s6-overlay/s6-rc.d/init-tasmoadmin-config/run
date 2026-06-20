@@ -45,8 +45,8 @@ fi
 
 echo "* Generating tasmoadmin php configuration from environment variables ..."
 # set local timezone
-printf "date.timezone=%s\\n" "${TZ:-UTC}" > "/etc/php84/conf.d/30_timezone.ini"
-envsubst "$ENVSUBST_VARS" < "/defaults/php-fpm.d/www.conf.template" > "/etc/php84/php-fpm.d/www.conf"
+printf "date.timezone=%s\\n" "${TZ:-UTC}" > "/etc/php5/conf.d/30_timezone.ini"
+envsubst "$ENVSUBST_VARS" < "/defaults/php-fpm.d/www.conf.template" > "/etc/php85/php-fpm.d/www.conf"
 
 echo '* Data directory initialization ...'
 mkdir -p "${CONFIGDIR}/tasmoadmin"
