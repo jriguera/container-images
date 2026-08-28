@@ -20,7 +20,8 @@ export AMULE_UDPPORT="${AMULE_UDPPORT:-4672}"
 export AMULE_UDPENABLE="${AMULE_UDP_ENABLE:-1}"
 export AMULE_EC_ECPORT="${AMULE_EC_ECPORT:-4712}"
 export AMULE_EC_ADDRESS="${AMULE_EC_ADDRESS:-127.0.0.1}"
-export AMULE_WEBSERVER_PORT="${AMULE_WEBSERVER_PORT:-${PORT:-4711}}"
+export AMULE_WEBSERVER_PORT="${AMULE_WEBSERVER_PORT:-${PORT_WEB:-4711}}"
+export AMULE_API_PORT="${AMULE_API_PORT:-${PORT_API:-4713}}"
 export AMULE_WEBSERVER_TEMPLATE="${AMULE_WEBSERVER_TEMPLATE:-bootstrap}"
 export AMULE_YOURHOSTNAME="${AMULE_YOURHOSTNAME:-}"
 
@@ -29,14 +30,12 @@ export AMULE_DATADIR_TEMP=${AMULE_DATADIR_TEMP:-temp}
 export AMULE_DATADIR_INCOMING=${AMULE_DATADIR_INCOMING:-incoming}
 
 
-if [[ -n "${AMULE_PASSWORD}" ]]
-then
-    echo "* Computing MD5 hash for provided password..."
-    AMULE_PASSWORD_HASH=$(echo -n "${AMULE_PASSWORD}" | md5sum | cut -d' ' -f1)
-    export AMULE_PASSWORD_HASH
-else
-    export AMULE_PASSWORD_HASH="${AMULE_PASSWORD_HASH:-6e0600b99a12d7e70687f0937a152fd5}"  # Default MD5 hash for "amule"
-fi
+# Password used for the Remote GUI (EC) and the Web UI. amuleapi hashes the
+# EC password itself, so it needs the plaintext value.
+export AMULE_PASSWORD="${AMULE_PASSWORD:-amule}"
+echo "* Computing MD5 hash for password..."
+AMULE_PASSWORD_HASH=$(echo -n "${AMULE_PASSWORD}" | md5sum | cut -d' ' -f1)
+export AMULE_PASSWORD_HASH
 
 # Generate configuration file if GENERATE_CONFIG is true, 1, True, TRUE or not defined
 if [[ -z "${GENERATE_CONFIG}" ]] || [[ "${GENERATE_CONFIG,,}" == "true" ]] || [[ "${GENERATE_CONFIG}" == "1" ]]
@@ -46,6 +45,14 @@ then
     # expand variables + preserve formatting
     eval "echo \"$(cat /defaults/amule.conf.template)\"" > "${CONFIGDIR}/amule.conf"
     eval "echo \"$(cat /defaults/remote.conf.template)\"" > "${CONFIGDIR}/remote.conf"
+    eval "echo \"$(cat /defaults/amuleapi.conf.template)\"" > "${CONFIGDIR}/amuleapi.conf"
+    # amuleapi refuses to start if its config is readable by group/others
+    chmod 600 "${CONFIGDIR}/amuleapi.conf"
+    # Store the Web UI admin password in amuleapi's salted password file
+    echo "* Setting amuleapi Web UI admin password ..."
+    amuleapi --config-dir="${CONFIGDIR}" --no-log-file --set-admin-pass="${AMULE_PASSWORD}" || \
+        echo "* WARNING: could not set amuleapi admin password"
+    chmod 600 "${CONFIGDIR}"/amuleapi-* 2>/dev/null || true
 fi
 
 # create required directories inside DATADIR

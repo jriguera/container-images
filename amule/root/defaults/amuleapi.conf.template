@@ -1,0 +1,16 @@
+[Server]
+BindAddress=0.0.0.0
+Port=${AMULE_API_PORT:-4713}
+AllowCORS=0
+StaticRoot=
+[EC]
+Host=${AMULE_EC_ADDRESS:-127.0.0.1}
+Port=${AMULE_EC_ECPORT:-4712}
+Password=${AMULE_PASSWORD:-amule}
+Encryption=1
+[Auth]
+LoginFailureWindowSeconds=60
+LoginFailureThreshold=5
+LoginLockoutSeconds=300
+[Streaming]
+EventBusRingCapacity=16384

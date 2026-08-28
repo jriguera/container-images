@@ -1,0 +1,25 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+# amuleweb is the legacy Web UI. It runs as its own process (amuled has
+# [WebServer]Enabled=0) and connects to amuled over the EC interface using
+# the settings in ${CONFIGDIR}/remote.conf.
+
+# Allow disabling this service with ENABLE_AMULEWEB=false (defaults to true).
+if [[ "${ENABLE_AMULEWEB:-true}" != "true" ]] && [[ "${ENABLE_AMULEWEB}" != "1" ]]
+then
+    echo "* amuleweb is disabled (ENABLE_AMULEWEB=${ENABLE_AMULEWEB}). Not starting."
+    # Bring this service down so s6 does not restart it, then idle.
+    s6-svc -d /run/service/svc-amuleweb 2>/dev/null || true
+    exec sleep infinity
+fi
+
+if [[ -z ${LSIO_NON_ROOT_USER} ]]
+then
+    exec s6-setuidgid abc \
+        env HOME="${CONFIGDIR}" \
+        amuleweb --config-dir="${CONFIGDIR}" --log-stdout
+else
+    export HOME="${CONFIGDIR}"
+    exec amuleweb --config-dir="${CONFIGDIR}" --log-stdout
+fi

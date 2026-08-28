@@ -1,5 +1,5 @@
 [eMule]
-AppVersion=2.3.3
+AppVersion=3.1.0
 Nick=http://www.aMule.org
 QueueSizePref=50
 MaxUpload=1000
@@ -70,7 +70,7 @@ SeeShare=1
 FilterLanIPs=0
 ParanoidFiltering=1
 IPFilterAutoLoad=1
-IPFilterURL=http://upd.emule-security.org/ipfilter.zip
+IPFilterURL=https://upd.emule-security.org/ipfilter.zip
 FilterLevel=127
 IPFilterSystem=0
 FilterMessages=1
@@ -83,6 +83,8 @@ ShowMessagesInLog=1
 FilterComments=0
 CommentFilter=
 ShareHiddenFiles=0
+AutoscanSharedDirs=1
+FollowSymlinksInShares=1
 AutoSortDownloads=0
 NewVersionCheck=0
 AdvancedSpamFilter=1
@@ -95,12 +97,12 @@ AllcatType=0
 ShowAllNotCats=0
 SmartIdState=0
 DropSlowSources=0
-KadNodesUrl=http://upd.emule-security.org/nodes.dat
-Ed2kServersUrl=http://upd.emule-security.org/server.met
+KadNodesUrl=https://upd.emule-security.org/nodes.dat
+Ed2kServersUrl=https://upd.emule-security.org/server.met
 ShowRatesOnTitle=0
-GeoLiteCountryUpdateUrl=http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz
+GeoLiteCountryUpdateUrl=
 StatsServerName=Shorty ED2K stats
-StatsServerURL=http://ed2k.shortypower.dyndns.org/?hash=
+StatsServerURL=https://ed2k.shortypower.org/?hash=
 CreateSparseFiles=1
 [Browser]
 OpenPageInTab=1
@@ -126,8 +128,11 @@ UseSecIdent=1
 IpFilterClients=1
 IpFilterServers=1
 TransmitOnlyUploadingClients=0
+AuthFailureThreshold=10
+AuthFailureWindowSeconds=60
+AuthLockoutSeconds=300
 [WebServer]
-Enabled=1
+Enabled=0
 Password=${AMULE_PASSWORD_HASH:-6e0600b99a12d7e70687f0937a152fd5}
 PasswordLow=
 Port=${AMULE_WEBSERVER_PORT:-4711}
@@ -138,8 +143,16 @@ UseLowRightsUser=0
 PageRefreshTime=120
 Template=${AMULE_WEBSERVER_TEMPLATE:-bootstrap}
 Path=amuleweb
+[AmuleApi]
+Enabled=0
+BindAddress=127.0.0.1
+HttpPort=4713
+[MediaMetadata]
+Enabled=1
+FFProbePath=
 [GUI]
 HideOnClose=0
+AppImageIntegrationDeclined=0
 [Razor_Preferences]
 FastED2KLinksHandler=1
 [SkinGUIOptions]
