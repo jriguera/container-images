@@ -3,9 +3,11 @@
 # Container versions
 ARG NODE_VERSION=24.16.0
 ARG COMPOSER_VERSION=2.10.1
+ARG TA_VERSION=5.0.0
 
 FROM docker.io/library/node:${NODE_VERSION}-alpine AS node-builder
 
+ARG TA_VERSION
 RUN apk add --no-cache curl jq
 RUN echo "**** downloading tasmoadmin ****" && \
   TA_VERSION=${TA_VERSION:-$(curl -s "https://api.github.com/repos/TasmoAdmin/TasmoAdmin/releases/latest" | jq -r '.tag_name')} && \
@@ -19,7 +21,6 @@ RUN echo "**** build ****" && \
   rm -rf node_modules/
 
 
-# syntax=docker/dockerfile:1
 FROM docker.io/library/composer:${COMPOSER_VERSION} AS builder
 
 COPY --from=node-builder /tasmoadmin  /tasmoadmin
@@ -27,14 +28,13 @@ WORKDIR /tasmoadmin
 RUN composer install --optimize-autoloader --no-dev
 
 
-# syntax=docker/dockerfile:1
 FROM ghcr.io/linuxserver/baseimage-alpine:3.24
 
-# set version label
+# set version label
 ARG BUILD_DATE="unknown"
 ARG VERSION="latest"
 ARG COMMIT_SHA="main"
-ARG TA_VERSION=5.0.0
+ARG TA_VERSION
 
 LABEL org.opencontainers.image.created="${BUILD_DATE}"
 LABEL org.opencontainers.image.authors="linuxserver.io authors and jriguera"
