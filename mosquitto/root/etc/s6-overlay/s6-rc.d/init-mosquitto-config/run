@@ -12,6 +12,7 @@ export MQTT_AUTOSAVE="${MQTT_AUTOSAVE:-300}"
 export MQTT_AUTOSAVE_ON_CHANGES="${MQTT_AUTOSAVE_ON_CHANGES:-false}"
 export MQTT_MAX_CONNECTIONS="${MQTT_MAX_CONNECTIONS:-500}"
 export MQTT_MAX_QUEUED_MESSAGES="${MQTT_MAX_QUEUED_MESSAGES:-100}"
+export MQTT_MAX_PACKET_SIZE="${MQTT_MAX_PACKET_SIZE:-104857600}"
 export MQTT_SET_TCP_NODELAY="${MQTT_SET_TCP_NODELAY:-true}"
 export MQTT_MAX_KEEPALIVE="${MQTT_MAX_KEEPALIVE:-65535}"
 export MQTT_USE_USERNAME_AS_CLIENTID="${MQTT_USE_USERNAME_AS_CLIENTID:-false}"
@@ -44,10 +45,16 @@ then
         echo "* Generating default listener from environment variables ..."
         cat <<-EOF > "${includes}/default.conf"
 		listener ${MQTT_PORT:-1883} 0.0.0.0
-		allow_anonymous ${MQTT_ALLOW_ANONYMOUS:-false}
-		password_file ${MOSQUITTO_USERS_FILE}
+		# Since mosquitto 2.1 per_listener_settings is deprecated; use the
+		# listener-prefixed options instead of the plain ones.
+		listener_allow_anonymous ${MQTT_ALLOW_ANONYMOUS:-false}
+		# password_file is deprecated in favour of the password-file plugin.
+		# Loaded globally (global_plugin) as there is no per-listener plugin option;
+		# the healthcheck socket listener bypasses it via listener_allow_anonymous.
+		global_plugin /usr/lib/mosquitto_password_file.so
+		plugin_opt_password_file ${MOSQUITTO_USERS_FILE}
 		allow_zero_length_clientid ${MQTT_ALLOW_NO_CLIENTID:-true}
-		auto_id_prefix generated-
+		listener_auto_id_prefix generated-
 		max_connections ${MQTT_MAX_CONNECTIONS:-500}
 		max_keepalive ${MQTT_MAX_KEEPALIVE:-65535}
 		set_tcp_nodelay ${MQTT_SET_TCP_NODELAY:-true}

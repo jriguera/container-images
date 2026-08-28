@@ -6,7 +6,10 @@ user ${MOSQUITTO_USER:-abc}
 log_dest ${MQTT_LOG_DST:-stdout}
 $(for t in "${MQTT_LOG_LEVEL[@]}"; do echo "log_type ${t}"; done)
 connection_messages ${MQTT_LOG_CONNECTIONS:-true}
-per_listener_settings true
+
+# Since mosquitto 2.1 max_packet_size defaults to 2MB (was 256MB / MQTT max).
+# Raise it back to 100MB (104857600 bytes) so large payloads are not rejected.
+max_packet_size ${MQTT_MAX_PACKET_SIZE:-104857600}
 
 max_queued_messages ${MQTT_MAX_QUEUED_MESSAGES:-100}
 use_username_as_clientid ${MQTT_USE_USERNAME_AS_CLIENTID:-false}
@@ -19,9 +22,11 @@ persistence_location ${DATADIR}
 
 # healthcheck
 listener 0 /run/mosquitto/mosquitto.sock
-allow_anonymous true
+# Since mosquitto 2.1 per_listener_settings is deprecated in favour of
+# listener-prefixed options. This listener stays anonymous for the healthcheck.
+listener_allow_anonymous true
 allow_zero_length_clientid true
-auto_id_prefix local-
+listener_auto_id_prefix local-
 
 include_dir ${CONFIGDIR}/conf.d
 
