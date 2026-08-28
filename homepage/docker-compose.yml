@@ -1,13 +1,13 @@
-version: "3.9"
-
 services:
   homepage:
     build:
       context: .
       args:
         BUILD_DATE: "2024-01-01T00:00:00Z"
-        VERSION: "latest"
-        COMMIT_BRANCH: "main"
+        VERSION: "2.1.2"
+        # Branch or tag of gethomepage/homepage to build. The amule.patch is
+        # validated against v2.1.2; using "main" may break patch application.
+        COMMIT_BRANCH: "v2.1.2"
     image: homepage:latest
     container_name: homepage
     restart: unless-stopped
