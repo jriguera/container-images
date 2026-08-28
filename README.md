@@ -10,8 +10,9 @@ This repository contains Docker container images for various applications, all b
 | [filebrowser](filebrowser) | Web-based file manager | [README](filebrowser/README.md) |
 | [homepage](homepage) | Homepage dashboard with custom aMule widget | [README](homepage/README.md) |
 | [mosquitto](mosquitto) | Eclipse Mosquitto MQTT broker | [README](mosquitto/README.md) |
-| [qbittorrent](qbittorrent) | qBittorrent BitTorrent client | [README](qbittorrent/README.md) |
 | [prowlarr](prowlarr) | Prowlarr indexer | [README](prowlarr/README.md) |
+| [qbittorrent](qbittorrent) | qBittorrent BitTorrent client | [README](qbittorrent/README.md) |
+| [quantum](quantum) | FileBrowser Quantum web-based file manager | [README](quantum/README.md) |
 | [tasmoadmin](tasmoadmin) | TasmoAdmin web interface for managing Tasmota devices | [README](tasmoadmin/README.md) |
 | [wireguard](wireguard) | Wireguard VPN | [README](wireguard/README.md) |
 
