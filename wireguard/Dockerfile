@@ -1,10 +1,13 @@
 # syntax=docker/dockerfile:1
 
 # Container versions
-ARG GOLANG_VERSION=1.25.5
-FROM docker.io/library/golang:${GOLANG_VERSION}-alpine AS go-builder
+ARG GOLANG_VERSION=1.27.0
+ARG BUILD_DATE="unknown"
 ARG VERSION="latest"
 ARG COMMIT_SHA="main"
+FROM docker.io/library/golang:${GOLANG_VERSION}-alpine AS go-builder
+ARG VERSION
+ARG COMMIT_SHA
 RUN apk add --no-cache make git ca-certificates
 # Download Go modules
 COPY container-network /app
@@ -17,11 +20,11 @@ RUN make build VERSION="${VERSION}"
 FROM docker.io/serjs/go-socks5-proxy:latest AS socks5proxy
 
 
-FROM ghcr.io/linuxserver/baseimage-alpine:3.22
-# set version label
-ARG BUILD_DATE="unknown"
-ARG VERSION="latest"
-ARG COMMIT_SHA="main"
+FROM ghcr.io/linuxserver/baseimage-alpine:3.24
+# set version label
+ARG BUILD_DATE
+ARG VERSION
+ARG COMMIT_SHA
 ARG WIREGUARD_VERSION=1.0
 
 LABEL org.opencontainers.image.created="${BUILD_DATE}"
