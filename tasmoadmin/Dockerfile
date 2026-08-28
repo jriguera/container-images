@@ -3,7 +3,7 @@
 # Container versions
 ARG NODE_VERSION=24.16.0
 ARG COMPOSER_VERSION=2.10.1
-ARG TA_VERSION=5.0.0
+ARG TA_VERSION=v5.0.0
 
 FROM docker.io/library/node:${NODE_VERSION}-alpine AS node-builder
 
@@ -11,7 +11,7 @@ ARG TA_VERSION
 RUN apk add --no-cache curl jq
 RUN echo "**** downloading tasmoadmin ****" && \
   TA_VERSION=${TA_VERSION:-$(curl -s "https://api.github.com/repos/TasmoAdmin/TasmoAdmin/releases/latest" | jq -r '.tag_name')} && \
-  curl -s -L "https://github.com/TasmoAdmin/TasmoAdmin/releases/download/${TA_VERSION}/tasmoadmin_${TA_VERSION}.tar.gz" -o /tmp/tasmoadmin.tar.gz && \
+  curl -fsSL "https://github.com/TasmoAdmin/TasmoAdmin/releases/download/${TA_VERSION}/tasmoadmin_${TA_VERSION}.tar.gz" -o /tmp/tasmoadmin.tar.gz && \
   mkdir -p /tasmoadmin && tar -xzf /tmp/tasmoadmin.tar.gz --strip-components=1 -C /tasmoadmin && \
   rm -rf /tmp/tasmoadmin.tar.gz
 WORKDIR /tasmoadmin
@@ -106,7 +106,7 @@ RUN echo "**** setup healthcheck ****" && \
   rm -f /etc/nginx/http.d/* && \
   echo "include ${CONFIGDIR}/nginx/nginx.conf;" > /etc/nginx/nginx.conf && \
   echo "**** configure php ****" && \
-  [ "$(readlink /usr/bin/php)" != "php84" ] && rm -rf /usr/bin/php && ln -s /usr/bin/php84 /usr/bin/php && \
+  ln -sf /usr/bin/php85 /usr/bin/php && \
   echo "**** fix logrotate ****" && \
   chmod a+x /etc/periodic/daily/logrotate && \
   echo "**** setup tasmoadmin symlink ****" && \
