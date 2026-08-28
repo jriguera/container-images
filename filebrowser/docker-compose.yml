@@ -1,13 +1,23 @@
-version: "3.9"
 services:
-  fb:
+  filebrowser:
     build:
-      context: docker
+      context: .
     image: filebrowser:latest
     restart: unless-stopped
-    network_mode: host
-    volumes:
-    - ./data:/data
-    - ./config:/config
     ports:
-    - 8000:8000
+      - "8000:8000"      # Web interface
+    volumes:
+      - ./data:/data
+      - ./config:/config
+    environment:
+      # Network
+      - PORT=8000
+      # Authentication
+      # Space-separated list of user:password:perm1,perm2 entries.
+      # If empty, auth is disabled (noauth) and a default admin:admin is created.
+      - FB_USERS=admin:admin:admin
+      # - FB_AUTH_METHOD=json
+      # Behavior
+      # - RESET_DB=false
+      # - FB_BASE_URL=
+      # - FB_LOG_DST=stdout

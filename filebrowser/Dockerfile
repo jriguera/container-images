@@ -1,12 +1,14 @@
 # syntax=docker/dockerfile:1
 
-FROM ghcr.io/linuxserver/baseimage-alpine:3.22
+FROM ghcr.io/linuxserver/baseimage-alpine:3.24
 
 # set version label
 ARG BUILD_DATE="unknown"
 ARG VERSION="latest"
 ARG COMMIT_SHA="main"
-ARG FILEBROWSER_VERSION
+# File Browser is archived (2026-09-01). v2.63.23 is the last upstream release.
+# Pin to it; override with --build-arg FILEBROWSER_VERSION=... if needed.
+ARG FILEBROWSER_VERSION="v2.63.23"
 
 LABEL org.opencontainers.image.created="${BUILD_DATE}"
 LABEL org.opencontainers.image.authors="linuxserver.io authors and jriguera"
