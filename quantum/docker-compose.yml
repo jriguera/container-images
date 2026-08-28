@@ -1,0 +1,24 @@
+services:
+  quantum:
+    build:
+      context: .
+    image: quantum:latest
+    restart: unless-stopped
+    ports:
+      - "8000:8000"      # Web interface
+    volumes:
+      - ./data:/data
+      - ./config:/config
+    environment:
+      # Network
+      - PORT=8000
+      # - FB_BASE_URL=/
+      # Admin account (rendered into the generated config.yaml)
+      - FB_ADMIN_USER=admin
+      - FB_ADMIN_PASSWORD=admin
+      # Behavior
+      # - FB_SOURCE=/data
+      # - FB_LOG_LEVEL=info
+      # - RESET_DB=false
+      # Use your own config file instead of the generated one:
+      # - FB_CONFIG_FILE=/config/myconfig.yaml

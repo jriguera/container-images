@@ -1,0 +1,31 @@
+# FileBrowser Quantum default configuration
+# Reference: https://filebrowserquantum.com/en/docs/configuration/
+# This file is used as a fallback/reference. When FB_CONFIG_FILE points to the
+# default location, the container regenerates it from environment variables on
+# startup (see init-quantum-config).
+http:
+  port: 8000
+  baseURL: "/"
+
+server:
+  database:
+    path: "/config/filebrowser.sqlite"
+  cacheDir: "/config/tmp"
+  logging:
+    - levels: "info|warning|error"
+  sources:
+    - path: "/data"
+      config:
+        defaultEnabled: true
+
+auth:
+  adminUsername: "admin"
+  adminPassword: "admin"
+  methods:
+    password:
+      enabled: true
+      minLength: 2
+
+integrations:
+  media:
+    ffmpegPath: "/usr/bin"
