@@ -8,7 +8,7 @@ FROM ghcr.io/linuxserver/baseimage-alpine:3.24
 ARG BUILD_DATE="unknown"
 ARG VERSION="latest"
 ARG COMMIT_SHA="main"
-ARG QBITTORRENT_VERSION="5.1"
+ARG QBITTORRENT_VERSION="5.2"
 ARG QBITTORRENT_CLI_VERSION="2.2"
 
 LABEL org.opencontainers.image.created="${BUILD_DATE}"
