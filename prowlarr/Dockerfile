@@ -1,12 +1,12 @@
 # syntax=docker/dockerfile:1
 
-FROM ghcr.io/linuxserver/baseimage-alpine:3.22
+FROM ghcr.io/linuxserver/baseimage-alpine:3.24
 
-# set version label
+# set version label
 ARG BUILD_DATE="unknown"
 ARG VERSION="latest"
 ARG COMMIT_SHA="main"
-ARG PROWLARR_VERSION
+ARG PROWLARR_VERSION="2.5.2.5491"
 ARG PROWLARR_BRANCH="master"
 
 LABEL org.opencontainers.image.created="${BUILD_DATE}"
