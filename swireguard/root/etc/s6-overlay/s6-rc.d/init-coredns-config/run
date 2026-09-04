@@ -1,0 +1,57 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+# Set default config directory if not provided
+CONFIGDIR="${CONFIGDIR:-/config}"
+CONFIGDIR_COREDNS="${CONFIGDIR_COREDNS:-${CONFIGDIR}/coredns}"
+CONFIGDIR_TEMPLATES="${CONFIGDIR_TEMPLATES:-$CONFIGDIR/templates}"
+
+# Default to generating CoreDNS config
+GENERATE_COREDNS_CONFIG="${GENERATE_COREDNS_CONFIG:-true}"
+
+# Webhook configuration parameters and defaults
+export COREDNS_ENABLED="${COREDNS_ENABLED:-}"
+export COREDNS_PORT="${COREDNS_PORT:-53}"
+export COREDNS_ADDR="${COREDNS_ADDR:-0.0.0.0}"
+
+# Load env file if it exists
+if [[ -f "${CONFIGDIR}/env" ]]
+then
+    # shellcheck source=/dev/null
+    source "${CONFIGDIR}/env"
+fi
+
+# Enable CoreDNS by default in client mode
+[[ -z "$WG_PEERS" ]] && COREDNS_ENABLED="${COREDNS_ENABLED:-true}" || COREDNS_ENABLED="${COREDNS_ENABLED:-false}"
+printf %s "${COREDNS_ENABLED}" > /run/s6/container_environment/COREDNS_ENABLED
+
+if [[ ${COREDNS_ENABLED} == "false" ]]
+then
+    echo "* CoreDNS not enabled, skipping configuration"
+    exit 0
+fi
+
+# Make folders if required
+mkdir -p "${CONFIGDIR_COREDNS}" "${CONFIGDIR_TEMPLATES}"
+
+# prepare templates, so user can modify them if needed
+[[ ! -f $CONFIGDIR_TEMPLATES/Corefile ]] && cp /defaults/Corefile $CONFIGDIR_TEMPLATES/Corefile
+
+# Generate configuration file if GENERATE_COREDNS_CONFIG is true, 1, True, TRUE or not defined
+if [[ -z "${GENERATE_COREDNS_CONFIG}" ]] || [[ "${GENERATE_COREDNS_CONFIG,,}" == "true" ]] || [[ "${GENERATE_COREDNS_CONFIG}" == "1" ]]
+then
+    if [[ ! -f "${CONFIGDIR_COREDNS}/Corefile" ]]
+    then
+        echo "* Generating default CoreDNS configuration ..."
+        eval "echo \"$(cat ${CONFIGDIR_TEMPLATES}/Corefile)\"" > "${CONFIGDIR_COREDNS}/Corefile"
+    else
+        echo "* CoreDNS configuration already exists at ${CONFIGDIR_COREDNS}/Corefile, skipping generation..."
+    fi
+else
+    echo "* CoreDNS configuration generation disabled (GENERATE_COREDNS_CONFIG=${GENERATE_COREDNS_CONFIG})"
+fi
+
+if [[ -z ${LSIO_NON_ROOT_USER} ]]
+then
+    lsiown -R abc:abc "${CONFIGDIR_COREDNS}" "${CONFIGDIR_TEMPLATES}"
+fi

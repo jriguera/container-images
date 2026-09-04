@@ -13,6 +13,7 @@ This repository contains Docker container images for various applications, all b
 | [prowlarr](prowlarr) | Prowlarr indexer | [README](prowlarr/README.md) |
 | [qbittorrent](qbittorrent) | qBittorrent BitTorrent client | [README](qbittorrent/README.md) |
 | [quantum](quantum) | FileBrowser Quantum web-based file manager | [README](quantum/README.md) |
+| [swireguard](swireguard) | Slim Wireguard VPN (no container-network, no gateway management) | [README](swireguard/README.md) |
 | [tasmoadmin](tasmoadmin) | TasmoAdmin web interface for managing Tasmota devices | [README](tasmoadmin/README.md) |
 | [wireguard](wireguard) | Wireguard VPN | [README](wireguard/README.md) |
 

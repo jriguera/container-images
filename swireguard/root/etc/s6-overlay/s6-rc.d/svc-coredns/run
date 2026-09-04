@@ -1,0 +1,29 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+# Set default config directory if not provided
+CONFIGDIR="${CONFIGDIR:-/config}"
+
+COREDNS_PORT="${COREDNS_PORT:-53}"
+COREDNS_ADDR="${COREDNS_ADDR:-0.0.0.0}"
+
+if netstat -apn | grep -q ":${COREDNS_PORT} " && [[ -z "${COREDNS_ENABLED}" ]]
+then
+    echo "* ERROR: Port ${COREDNS_PORT} is already in use by another service, disabling CoreDNS to avoid conflicts." >&2
+    COREDNS_ENABLED="false"
+fi
+
+if [[ ${COREDNS_ENABLED} == "false" ]]
+then
+    echo "* Disabling CoreDNS"
+    s6-notifyoncheck -n 300 -w 1000 -c "true" "sleep infinity"
+else
+    cmd="nc -zu 127.0.0.1 ${COREDNS_PORT}"
+    grep -q "health" ${CONFIGDIR}/coredns/Corefile && cmd="redirfd -w 1 /dev/null curl -s http://127.0.0.1:8080/health"
+
+    # Suppress automaxprocs message by setting GOMAXPROCS
+    export GOMAXPROCS="${GOMAXPROCS:-2}"
+
+    echo "* Starting CoreDNS ..."
+    exec s6-notifyoncheck -n 300 -w 10000 -c "${cmd}" cd ${CONFIGDIR}/coredns /usr/bin/coredns -quiet -dns.port=${COREDNS_PORT}
+fi

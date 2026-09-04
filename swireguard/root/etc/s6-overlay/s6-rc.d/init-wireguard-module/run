@@ -1,0 +1,17 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+echo "* Uname info: $(uname -a)"
+
+ip link del dev test 2>/dev/null
+if ip link add dev test type wireguard
+then
+    ip link del dev test
+    if capsh --current | grep "Current:" | grep -q "cap_sys_module"; then
+        echo "* INFO: As the wireguard module is already active you can remove the SYS_MODULE capability from your container run/compose."
+        echo "* INFO: But, If your host does not automatically load the iptables module, you may still need the SYS_MODULE capability."
+    fi
+else
+    echo "* ERROR: The wireguard module is not active. If you believe that your kernel should have wireguard support already, make sure that it is activated via modprobe!"
+    sleep infinity
+fi
