@@ -4,6 +4,9 @@ WireGuard Docker image based on Alpine Linux with s6-overlay, multi-arch support
 
 WireGuard is a modern, fast, and secure VPN tunnel that uses state-of-the-art cryptography.
 
+> **Looking for a lighter image?** See [`swireguard`](../swireguard/README.md), a reduced
+> variant without the `container-network` daemon and without default gateway management.
+
 Most of this work is based on https://github.com/linuxserver/docker-wireguard
 
 ## Features
