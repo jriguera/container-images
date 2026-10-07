@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-ARG AMULE_VERSION=master
+ARG AMULE_VERSION=3.1.0
 ARG BUILD_DATE="unknown"
 ARG VERSION="latest"
 ARG COMMIT_SHA="main"
@@ -30,10 +30,11 @@ RUN \
     libmaxminddb-dev \
     glib-dev \
     readline-dev \
-    wxwidgets-dev \
+#   wxwidgets-dev \
     zlib-dev \
     libpng-dev \
     libupnp-dev \
+    curl-dev \
     crypto++-dev
 
 WORKDIR /build
@@ -46,6 +47,39 @@ RUN \
   rm -rf reloaded/.git* reloaded/doc-images && \
   git clone --depth 1 --single-branch https://github.com/esaracho/amuleweb-adaptable adaptable && \
   rm -rf adaptable/.git*
+
+# wxWidgets is built from source because of a bug in wx: amuled hits a use-after-free in
+# the wx event loop during the startup HTTP downloads
+# https://github.com/amule-org/amule/issues/1136
+# The fix lands in wx 3.2.12, so WX_REF pins the 3.2-branch commit that carries it.
+# TODO: revert this and install the distro wxwidgets-dev/wxwidgets packages again once
+# wx 3.2.12 is released/packaged
+# Only wxBase and wxNet are built, which also drops glib: aMule links it only when wx
+# reports __WXGTK__. --with-libcurl is mandatory, aMule's HTTP downloads use wxWebRequest
+ARG WX_REF=3382306c8c35113ea93fe9276aa6f3a0587677c0
+# git clone --branch only accepts branch/tag names, so fetch the commit SHA directly
+RUN git init -q /build/wx-src && cd /build/wx-src && \
+    git fetch -q --depth 1 https://github.com/wxWidgets/wxWidgets.git "${WX_REF}" && git checkout -q FETCH_HEAD && \
+    ./configure \
+        --prefix=/usr \
+        --disable-gui \
+        --disable-debug \
+        --disable-precomp-headers \
+        --without-subdirs \
+        --without-expat \
+        --with-regex=sys \
+        --with-zlib=sys \
+        --with-libcurl \
+        --disable-mimetype \
+        --disable-secretstore \
+        --disable-debugreport \
+        --disable-fs_inet \
+        --disable-ftp \
+        --disable-sound && \
+    make -j"$(nproc)" && \
+    make install && \
+    strip /usr/lib/libwx_baseu*.so.*.*.* && \
+    cd /build && rm -rf wx-src
 
 RUN \
   echo "**** Download amule ****" && \
@@ -96,11 +130,14 @@ LABEL maintainer="jriguera"
 ENV DATADIR=/data
 ENV CONFIGDIR=/config
 ENV PORT_WEB=4711
-ENV PORT_API=4713
 ENV ECPORT=4712
 ENV AMULE_USER=abc
-ENV ENABLE_AMULEWEB=true
+ENV ENABLE_AMULEWEB=false
 ENV ENABLE_AMULEAPI=true
+
+# Use the built-in C.UTF-8 locale so amuled handles non-ASCII paths correctly
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
 
 # Install packages
 RUN \
@@ -165,5 +202,5 @@ RUN chmod a+x /healthcheck.sh && \
 HEALTHCHECK --start-period=2s --interval=30s --timeout=3s CMD /healthcheck.sh
 
 # ports and volumes
-EXPOSE "${PORT_WEB}" "${PORT_API}" "${ECPORT}"
+EXPOSE "${PORT_WEB}" "${ECPORT}"
 VOLUME "${DATADIR}"

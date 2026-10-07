@@ -8,8 +8,7 @@ services:
     networks:
       - amule
     ports:
-      - "4711:4711"      # Web interface (amuleweb, legacy)
-      - "4713:4713"      # Web interface + REST API (amuleapi, new)
+      - "4711:4711"      # Web interface + REST API (amuleapi, new) or  (amuleweb, legacy)
       - "4712:4712"      # External Connect
       - "4662:4662/tcp"  # eD2k TCP
       - "4672:4672/udp"  # eD2k UDP
@@ -31,9 +30,8 @@ services:
       - PORT_WEB=4711
       - AMULE_WEBSERVER_PORT=4711
       - AMULE_WEBSERVER_TEMPLATE=bootstrap
-      - ENABLE_AMULEWEB=true
+      - ENABLE_AMULEWEB=false
       # Web UI + REST API (amuleapi, new)
-      - PORT_API=4713
       - ENABLE_AMULEAPI=true
       # Behavior
       - GENERATE_CONFIG=true

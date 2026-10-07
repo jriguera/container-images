@@ -1,6 +1,6 @@
 [eMule]
 AppVersion=3.1.0
-Nick=http://www.aMule.org
+Nick=https://amule-org.github.io
 QueueSizePref=50
 MaxUpload=1000
 MaxDownload=1000
@@ -134,7 +134,7 @@ AuthLockoutSeconds=300
 [WebServer]
 Enabled=0
 Password=${AMULE_PASSWORD_HASH:-6e0600b99a12d7e70687f0937a152fd5}
-PasswordLow=
+PasswordLow=${AMULE_GUEST_PASSWORD_HASH:-}
 Port=${AMULE_WEBSERVER_PORT:-4711}
 WebUPnPTCPPort=50001
 UPnPWebServerEnabled=0
@@ -146,7 +146,7 @@ Path=amuleweb
 [AmuleApi]
 Enabled=0
 BindAddress=127.0.0.1
-HttpPort=4713
+HttpPort=${AMULE_WEBSERVER_PORT:-4711}
 [MediaMetadata]
 Enabled=1
 FFProbePath=
@@ -162,7 +162,7 @@ MaxClientVersions=0
 [Obfuscation]
 IsClientCryptLayerSupported=1
 IsCryptLayerRequested=1
-IsClientCryptLayerRequired=0
+IsClientCryptLayerRequired=${AMULE_CRYPT_REQUIRED:-0}
 CryptoPaddingLenght=254
 CryptoKadUDPKey=138123518
 [PowerManagement]

@@ -1,25 +1,36 @@
 #!/usr/bin/with-contenv bash
 # shellcheck shell=bash
 
-# amuleweb is the legacy Web UI. It runs as its own process (amuled has
-# [WebServer]Enabled=0) and connects to amuled over the EC interface using
-# the settings in ${CONFIGDIR}/remote.conf.
+# Web UI service. Runs one of (both listen on the same port, so only one at a time):
+#  - amuleapi: new Web UI + REST API, uses ${CONFIGDIR}/amuleapi.conf
+#  - amuleweb: legacy Web UI, uses ${CONFIGDIR}/remote.conf
+# amuled has [WebServer]Enabled=0 and [AmuleApi]Enabled=0, so they always run
+# here as their own process and connect to amuled over the EC interface.
+#
+# Selection: ENABLE_AMULEAPI=true (default) wins over ENABLE_AMULEWEB=true.
+# If both are false, the service is disabled.
 
-# Allow disabling this service with ENABLE_AMULEWEB=false (defaults to true).
-if [[ "${ENABLE_AMULEWEB:-true}" != "true" ]] && [[ "${ENABLE_AMULEWEB}" != "1" ]]
+is_true() { [[ "${1,,}" == "true" ]] || [[ "$1" == "1" ]]; }
+
+if is_true "${ENABLE_AMULEAPI:-true}"
 then
-    echo "* amuleweb is disabled (ENABLE_AMULEWEB=${ENABLE_AMULEWEB}). Not starting."
+    echo "* Starting amuleapi (Web UI + REST API) ..."
+    cmd=(amuleapi --config-dir="${CONFIGDIR}" --no-log-file)
+elif is_true "${ENABLE_AMULEWEB:-true}"
+then
+    echo "* Starting amuleweb (legacy Web UI) ..."
+    cmd=(amuleweb --amule-config-file="${CONFIGDIR}/amule.conf")
+else
+    echo "* Web UI is disabled (ENABLE_AMULEAPI=${ENABLE_AMULEAPI}, ENABLE_AMULEWEB=${ENABLE_AMULEWEB}). Not starting."
     # Bring this service down so s6 does not restart it, then idle.
     s6-svc -d /run/service/svc-amuleweb 2>/dev/null || true
     exec sleep infinity
 fi
 
+export HOME="${CONFIGDIR}"
 if [[ -z ${LSIO_NON_ROOT_USER} ]]
 then
-    exec s6-setuidgid abc \
-        env HOME="${CONFIGDIR}" \
-        amuleweb --config-dir="${CONFIGDIR}" --log-stdout
+    exec s6-setuidgid abc "${cmd[@]}"
 else
-    export HOME="${CONFIGDIR}"
-    exec amuleweb --config-dir="${CONFIGDIR}" --log-stdout
+    exec "${cmd[@]}"
 fi

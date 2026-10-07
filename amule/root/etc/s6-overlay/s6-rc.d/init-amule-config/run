@@ -21,7 +21,9 @@ export AMULE_UDPENABLE="${AMULE_UDP_ENABLE:-1}"
 export AMULE_EC_ECPORT="${AMULE_EC_ECPORT:-4712}"
 export AMULE_EC_ADDRESS="${AMULE_EC_ADDRESS:-127.0.0.1}"
 export AMULE_WEBSERVER_PORT="${AMULE_WEBSERVER_PORT:-${PORT_WEB:-4711}}"
-export AMULE_API_PORT="${AMULE_API_PORT:-${PORT_API:-4713}}"
+
+# export AMULE_API_PORT="${AMULE_API_PORT:-${PORT_API:-4713}}"
+
 export AMULE_WEBSERVER_TEMPLATE="${AMULE_WEBSERVER_TEMPLATE:-bootstrap}"
 export AMULE_YOURHOSTNAME="${AMULE_YOURHOSTNAME:-}"
 
@@ -36,6 +38,21 @@ export AMULE_PASSWORD="${AMULE_PASSWORD:-amule}"
 echo "* Computing MD5 hash for password..."
 AMULE_PASSWORD_HASH=$(echo -n "${AMULE_PASSWORD}" | md5sum | cut -d' ' -f1)
 export AMULE_PASSWORD_HASH
+
+# Require encrypted (obfuscated) connections from peers: 0 (default) or 1
+export AMULE_CRYPT_REQUIRED="${AMULE_CRYPT_REQUIRED:-0}"
+
+# Optional read-only guest account for the Web UI. Empty (default) = disabled
+export AMULE_GUEST_PASSWORD="${AMULE_GUEST_PASSWORD:-}"
+if [[ -n "${AMULE_GUEST_PASSWORD}" ]]
+then
+    AMULE_GUEST_ENABLED=1
+    AMULE_GUEST_PASSWORD_HASH=$(echo -n "${AMULE_GUEST_PASSWORD}" | md5sum | cut -d' ' -f1)
+else
+    AMULE_GUEST_ENABLED=0
+    AMULE_GUEST_PASSWORD_HASH=""
+fi
+export AMULE_GUEST_ENABLED AMULE_GUEST_PASSWORD_HASH
 
 # Generate configuration file if GENERATE_CONFIG is true, 1, True, TRUE or not defined
 if [[ -z "${GENERATE_CONFIG}" ]] || [[ "${GENERATE_CONFIG,,}" == "true" ]] || [[ "${GENERATE_CONFIG}" == "1" ]]
@@ -52,6 +69,9 @@ then
     echo "* Setting amuleapi Web UI admin password ..."
     amuleapi --config-dir="${CONFIGDIR}" --no-log-file --set-admin-pass="${AMULE_PASSWORD}" || \
         echo "* WARNING: could not set amuleapi admin password"
+    # Empty password disables the read-only guest account (amuleapi default)
+    amuleapi --config-dir="${CONFIGDIR}" --no-log-file --set-guest-pass="${AMULE_GUEST_PASSWORD}" || \
+        echo "* WARNING: could not set amuleapi guest password"
     chmod 600 "${CONFIGDIR}"/amuleapi-* 2>/dev/null || true
 fi
 

@@ -1,6 +1,6 @@
 [Server]
 BindAddress=0.0.0.0
-Port=${AMULE_API_PORT:-4713}
+Port=${AMULE_WEBSERVER_PORT:-4711}
 AllowCORS=0
 StaticRoot=
 [EC]
