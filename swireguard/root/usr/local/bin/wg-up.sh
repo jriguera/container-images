@@ -1,6 +1,13 @@
 #!/usr/bin/with-contenv bash
 # shellcheck shell=bash
 
+# This script needs bash. "sh wg-up.sh" ignores the shebang, so fail clearly
+if [ -z "${BASH_VERSION:-}" ]
+then
+    echo "ERROR: $0 must be run with bash, not sh. Use: PostUp = /usr/local/bin/wg-up.sh %i" >&2
+    exit 1
+fi
+
 # Show connection info once the tunnel is up. Every attempt tries all the
 # services in public-ipinfo.sh (a single one, like ipinfo.io, may rate-limit
 # shared VPN exit addresses with HTTP 429 and tear down a working tunnel)

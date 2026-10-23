@@ -1,6 +1,13 @@
 #!/usr/bin/bash
 # shellcheck shell=bash
 
+# This script needs bash. "sh public-ipinfo.sh" ignores the shebang, so fail clearly
+if [ -z "${BASH_VERSION:-}" ]
+then
+    echo "ERROR: $0 must be run with bash, not sh" >&2
+    exit 1
+fi
+
 # Print public IP information as JSON (stdout). Several services are tried in
 # order, because they rate-limit shared VPN exit addresses (HTTP 429). Failures
 # are reported on stderr, so stdout only carries the JSON document.
