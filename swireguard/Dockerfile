@@ -85,7 +85,7 @@ RUN \
   rm -rf /tmp/webhook.tar.gz /tmp/webhook
 
 # Define healthcheck script
-HEALTHCHECK --start-period=30s --interval=60s --timeout=5s CMD /healthcheck.sh
+HEALTHCHECK --start-period=30s --interval=120s --timeout=5s CMD /healthcheck.sh
 
 # ports and volumes
 EXPOSE "${PORT}/udp" "${PROXY_PORT}"
