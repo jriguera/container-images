@@ -24,10 +24,5 @@ else
   # Health check command
   cmd="nc -z ${WEBHOOK_ADDR} ${WEBHOOK_PORT}"
   echo "* Starting Webhook ..."
-  if [[ -z ${LSIO_NON_ROOT_USER} ]]
-  then
-      exec s6-notifyoncheck -n 300 -w 30000 -c "${cmd}" s6-setuidgid abc /usr/bin/webhook "${WEBHOOK_ARGS[@]}" -urlprefix ""
-  else
-      exec s6-notifyoncheck -n 300 -w 30000 -c "${cmd}" /usr/bin/webhook "${WEBHOOK_ARGS[@]}" -urlprefix ""
-  fi
+  exec s6-notifyoncheck -n 300 -w 30000 -c "${cmd}" /usr/bin/webhook "${WEBHOOK_ARGS[@]}" -urlprefix ""
 fi
