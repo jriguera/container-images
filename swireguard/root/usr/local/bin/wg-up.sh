@@ -52,6 +52,7 @@ ping_checks() {
             then
                 echo "* Ping ${host} via ${iface}: OK" >&2
                 reachable=$((reachable + 1))
+                return 0
             else
                 echo "WARNING: Ping ${host} via ${iface}: no reply in ${WG_PING_TIMEOUT}s" >&2
             fi
@@ -61,24 +62,29 @@ ping_checks() {
             echo "WARNING: None of the public IPs [${WG_PING_PUBLIC}] replied via ${iface}" >&2
         fi
     done
+    return 1
 }
+
 
 while [[ ${ATTEMPT} -lt ${MAX_ATTEMPTS} ]]
 do
     ATTEMPT=$((ATTEMPT + 1))
-    for url in ${IPINFO_SERVICES}
-    do
-        if OUTPUT=$(ipinfo_query "${url}")
-        then
-            echo "${OUTPUT}"
-            ping_checks
-            exit 0
-        fi
-        echo "WARNING: attempt ${ATTEMPT}/${MAX_ATTEMPTS}: ${url} failed: ${OUTPUT}" >&2
-    done
+    if ping_checks
+    then
+        for url in ${IPINFO_SERVICES}
+        do
+            if OUTPUT=$(ipinfo_query "${url}")
+            then
+                echo "${OUTPUT}"
+                exit 0
+            fi
+            echo "WARNING: attempt ${ATTEMPT}/${MAX_ATTEMPTS}: ${url} failed: ${OUTPUT}" >&2
+        done
+    else
+        echo "WARNING: attempt ${ATTEMPT}/${MAX_ATTEMPTS}: ping checks failed" >&2
+    fi
     sleep 1
 done
 
 echo "ERROR: Failed to get public IP info from any of [${IPINFO_SERVICES}] after ${MAX_ATTEMPTS} attempts" >&2
-ping_checks
 exit 1

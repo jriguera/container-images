@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/with-contenv bash
 # shellcheck shell=bash
 
 # This script needs bash. "sh public-ipinfo.sh" ignores the shebang, so fail clearly
