@@ -12,7 +12,10 @@ connection_messages ${MQTT_LOG_CONNECTIONS:-true}
 max_packet_size ${MQTT_MAX_PACKET_SIZE:-104857600}
 
 max_queued_messages ${MQTT_MAX_QUEUED_MESSAGES:-100}
-use_username_as_clientid ${MQTT_USE_USERNAME_AS_CLIENTID:-false}
+# use_username_as_clientid is a listener option: it lives in conf.d/default.conf
+# after `listener`. Since mosquitto 2.1 it creates an implicit default listener
+# on 1883 when it appears before any listener, which then clashes with the one
+# in default.conf ("Error: Address in use").
 
 autosave_interval ${MQTT_AUTOSAVE:-300}
 autosave_on_changes ${MQTT_AUTOSAVE_ON_CHANGES:-false}

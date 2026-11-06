@@ -54,6 +54,8 @@ then
 		global_plugin /usr/lib/mosquitto_password_file.so
 		plugin_opt_password_file ${MOSQUITTO_USERS_FILE}
 		allow_zero_length_clientid ${MQTT_ALLOW_NO_CLIENTID:-true}
+		# Listener option: must come after `listener` (see mosquitto.conf.template).
+		use_username_as_clientid ${MQTT_USE_USERNAME_AS_CLIENTID:-false}
 		listener_auto_id_prefix generated-
 		max_connections ${MQTT_MAX_CONNECTIONS:-500}
 		max_keepalive ${MQTT_MAX_KEEPALIVE:-65535}
