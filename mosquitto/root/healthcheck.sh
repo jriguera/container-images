@@ -18,7 +18,10 @@ fi
 # find a listener using sockets
 if SOCKET=$(sed -n '/^listener\s\+0 .*/{s/^listener\s\+0\s\+\(.*\)$/\1/p;h};${x;/./{x;q0};x;q1}' "${CONFIGDIR}/mosquitto.conf")
 then
-    mosquitto_sub --unix ${SOCKET} -t ${HEALTHCHECK_TOPIC} -E -C 1 -i ${HEALTHCHECK_CLIENT_ID} -W 3
+    # Not ready yet: mosquitto has not created the socket. Fail quietly (s6-notifyoncheck
+    # retries at start-up); mosquitto_sub would print "Error: Bad file descriptor".
+    [[ -S "${SOCKET}" ]] || exit 1
+    mosquitto_sub --unix "${SOCKET}" -t "${HEALTHCHECK_TOPIC}" -E -C 1 -i "${HEALTHCHECK_CLIENT_ID}" -W 3
 else
     mosquitto_sub -h 127.0.0.1 -t ${HEALTHCHECK_TOPIC} -E -C 1 -i ${HEALTHCHECK_CLIENT_ID} -W 3
 fi
